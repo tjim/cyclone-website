@@ -1,0 +1,1832 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Cyclone for C Programmers</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Cyclone for C Programmers</h2>
+
+<p>We begin with a quick overview of Cyclone, suitable for those who
+already know how to program in C. We&#8217;ll explain some of the ways that
+Cyclone differs from C and some of the reasons why; you should come
+away with enough knowledge to start writing, compiling, and running
+your own Cyclone programs. We assume that the Cyclone compiler is
+already installed on your system (see <a href='/wiki/Installing Cyclone'>Installing Cyclone</a> if you
+need to install the compiler).</p>
+
+<h3>Getting Started <a name="GettingStarted"></a></h3>
+
+<p>Here&#8217;s a Cyclone program that prints the string &#8220;hello, world.&#8221;</p>
+
+<pre><code>    #include &lt;stdio.h&gt;
+
+    int main() {
+      printf("hello, world\n");
+      return 0;
+    }
+</code></pre>
+
+<p>It looks rather like a C program&#8212;in fact, a C compiler will happily
+compile it. The program uses #include to tell the preprocessor to
+import some standard definitions, it defines a distinguished function
+main that serves as the entry point of the program, and it uses the
+familiar printf function to handle the printing; all of this is just
+as in C.</p>
+
+<p>To compile the program, put it into a file hello.cyc, and run the
+command</p>
+
+<pre><code>    cyclone -o hello hello.cyc
+</code></pre>
+
+<p>This tells the Cyclone compiler (cyclone) to compile the file
+hello.cyc; the -o flag tells the compiler to leave the executable
+output in the file hello (or, in Windows, hello.exe). If all goes well
+you can execute the program by typing</p>
+
+<pre><code>    hello
+</code></pre>
+
+<p>and it will print</p>
+
+<pre><code>    hello, world
+</code></pre>
+
+<p>It&#8217;s interesting to compare our program with a version that omits the
+return statement:</p>
+
+<pre><code>    #include &lt;stdio.h&gt;
+
+    int main() {
+      printf("hello, world\n");
+    }
+</code></pre>
+
+<p>A C compiler will compile and run this version without warning. In
+contrast, Cyclone will warn that you have failed to return an
+int. Cyclone only warns you when you fail to return an integral type
+(char, short, int, etc.) but it gives an error if you fail to return
+other types (e.g., pointer types). This requirement of <em>definite
+return</em> ensures type safety while imposing minimal constraints on a
+programmer porting C code to Cyclone.</p>
+
+<p>Definite return reflects Cyclone&#8217;s concern with safety. The caller of
+the function expects to receive a value of the return type; if the
+function does not execute a return statement, the caller will receive
+some incorrect value instead. If the returned value is supposed to be
+a pointer, the caller might try to dereference it, and dereferencing
+an arbitrary address can cause the program to crash. So, Cyclone
+requires a return statement with a value of the return type whenever
+type safety can be compromised.</p>
+
+<h3>Pointers <a name="Pointers"></a></h3>
+
+<p>Programs that use pointers properly in C can be both fast and
+elegant. But when pointers are used improperly in C, they cause core
+dumps and buffer overflows. To prevent this, Cyclone introduces
+different kinds of pointers and either (a) puts some restrictions on
+how you can use pointers of a given kind or (b) places no restrictions
+but may insert additional run-time checks. Here we present a basic
+overview of Cyclone pointers; they are summarized and covered in more
+detail in <a href='/wiki/Pointers'>Pointers</a>.</p>
+
+<h4>Nullable Pointers</h4>
+
+<p>The first kind of pointer is indicated with a <code>*</code>, as in C. For example,
+if we declare</p>
+
+<pre><code>    int x = 3;
+    int *y = &amp;x;
+</code></pre>
+
+<p>then y is a pointer to the integer 3 (the contents of x). The pointer,
+y, is represented by a memory address, namely, the address of x. To
+refer to the contents of y, you use <code>*y</code>, so, for example, you can
+increment the value of x with an assignment like</p>
+
+<pre><code>    *y = *y + 1;
+</code></pre>
+
+<p>This much is just as in C. However, there are some differences in
+Cyclone:</p>
+
+<ul>
+<li>You can&#8217;t cast an integer to a pointer. Cyclone prevents this
+because it would let you overwrite arbitrary memory locations. In
+Cyclone, NULL is a keyword suitable for situations where you would
+use a (casted) 0 in C. The compiler accepts 0 as a legal
+possibly-null pointer value, but using NULL is preferred.</li>
+<li>You can&#8217;t do pointer arithmetic on a <code>*</code> pointer. Pointer arithmetic
+in C can take a pointer out of bounds, so that when the pointer is
+eventually dereferenced, it corrupts memory or causes a
+crash. (However, pointer arithmetic is possible using @fat and
+@zeroterm pointers.)</li>
+<li>There is one other way to crash a C program using pointers: you
+can dereference the NULL pointer or try to update the NULL
+location. Cyclone prevents this by inserting a null check whenever
+you dereference a <code>*</code> pointer (that is, whenever you use the <code>*</code>, ->,
+or subscript operation on a pointer.)</li>
+</ul>
+
+<p>These are drastic differences from C, particularly the restriction on
+pointer arithmetic. The benefit is that you can&#8217;t cause a crash using
+<code>*</code> pointers in Cyclone.</p>
+
+<h4>Fat Pointers</h4>
+
+<p>If you need to do pointer arithmetic in Cyclone, you can use a second
+kind of pointer, called a <em>fat pointer</em> and indicated by writing the
+qualifier @fat after the <code>*</code>. For example, here is a program that echoes
+its command-line arguments:</p>
+
+<pre><code>    #include &lt;stdio.h&gt;
+
+    int main(int argc, char *@fat *@fat argv) {
+      argc--; argv++; /* skip command name */
+      if (argc &gt; 0) {
+        /* print first arg without a preceding space */
+        printf("%s",*argv);
+        argc--; argv++;
+      }
+      while (argc &gt; 0) {
+        /* print other args with a preceding space */
+        printf(" %s",*argv);
+        argc--; argv++;
+      }
+      printf("\n");
+      return 0;
+    }
+</code></pre>
+
+<p>Except for the declaration of argv, which holds the command-line
+arguments, the program looks just like you would write it in C:
+pointer arithmetic (argv++) is used to move argv to point to each
+argument in turn, so it can be printed.</p>
+
+<p>In C, argv would typically be declared with type <code>char **</code>, a pointer
+to a pointer to a character, which is thought of as an array of an
+array of characters. In Cyclone, argv is instead declared with type
+<code>char *@fat*@fat</code>, which is thought of in the same way: it is a (fat)
+pointer to a (fat) pointer to characters. The difference between an
+unqualified pointer and a @fat pointer is that a @fat pointer comes
+with bounds information and is thus &#8220;fatter&#8221; than a traditional
+pointer. Each time a fat pointer is dereferenced or its contents are
+assigned to, Cyclone inserts both a null check and a bounds
+check. This guarantees that a @fat pointer can never cause a buffer
+overflow.</p>
+
+<p>Because of the bounds information contained in @fat pointers, argc is
+superfluous: you can get the size of argv by writing
+numelts(argv). We&#8217;ve kept argc as an argument of main for backwards
+compatibility.</p>
+
+<p>It&#8217;s worth remarking that you can always cast a <code>*</code> pointer to a @fat
+pointer (and vice-versa). So, it is possible to do pointer arithmetic
+on a value of type <code>*</code>, but only when you insert the appropriate casts
+to convert from one pointer type to another. Note that some of these
+casts can fail at run-time. For instance, if you try to cast a fat
+pointer that points to an empty sequence of characters to <code>char *</code>,
+then the cast will fail since the sequence doesn&#8217;t contain at least
+one character.</p>
+
+<p>Finally, @fat pointers are used so frequently in Cyclone, that there
+is special character, ? (question mark) that you can use as an
+abbreviation for <code>*@fat</code>. For instance, we could write the prototype for
+main as:</p>
+
+<pre><code>  int main(int argc, char ?? argv);
+</code></pre>
+
+<p>instead of the more verbose:</p>
+
+<pre><code>  int main(int argc, char *@fat *@fat argv);
+</code></pre>
+
+<h4>Non-NULL Pointers</h4>
+
+<p>Another kind of pointer in Cyclone is the non-NULL pointer. A non-NULL
+pointer is indicated by the qualifier @notnull. A @notnull pointer is
+like an unqualified pointer, except that it is guaranteed not to be
+NULL. This means that when you dereference a @notnull pointer or
+assign to its contents, a null check is sometimes unnecessary.</p>
+
+<p>@notnull pointers are useful in Cyclone both for efficiency and as
+documentation. This can be seen at work in the standard library, where
+many functions take @notnull pointers as arguments, or return @notnull
+pointers as results. For example, the getc function that reads a
+character from a file is declared,</p>
+
+<pre><code>    int getc(FILE *@notnull);
+</code></pre>
+
+<p>This says that getc expects to be called with a non-NULL pointer to a
+FILE. Cyclone guarantees that, in fact, when the getc function is
+entered, its argument is not NULL. This means that getc does not have
+to test whether it is NULL, or decide what to do if it is in fact
+NULL.</p>
+
+<p>In C, the argument of getc is declared to have type <code>FILE *</code>, and
+programmers can call getc with NULL. So for safety, C&#8217;s getc ought to
+check for NULL. In practice, many C implementations omit the check;
+getc(NULL) is an easy way to crash a C program.</p>
+
+<p>In Cyclone, you can still call getc with a possibly-NULL FILE pointer
+(a <code>FILE *</code>). However, Cyclone insists that you insert a check before
+the actual call:</p>
+
+<pre><code>    FILE *f = fopen("/etc/passwd","r");
+    int c = getc((FILE *@notnull)f);
+</code></pre>
+
+<p>Here f will be NULL if the file /etc/passwd doesn&#8217;t exist or can&#8217;t be
+read. So, in Cyclone f must be cast to <code>FILE *@notnull</code> before the
+call to getc. The cast causes a null check. If you try to call getc
+without the cast, Cyclone will insert one for you automatically, and
+warn you that it is doing so.</p>
+
+<p>These warnings do not mean that your program is unsafe&#8212;after all,
+Cyclone has inserted the check for you. However, you should pay
+attention to the warnings because they indicate a place where your
+program could suddenly halt (if the check fails), and because the
+inserted checks can slow down your program. It&#8217;s worth rewriting your
+code to handle the error case better, or even eliminate the null
+check. For instance, if we rewrite the code above so that we
+explicitly test whether or not fopen succeeds in returning a non-NULL
+file descriptor:</p>
+
+<pre><code>    FILE *f = fopen("/etc/passwd","r");
+    if (f == NULL) {
+      fprintf(stderr,"cannot open passwd file!");
+      exit(-1);
+    }
+    int c = getc(f);
+</code></pre>
+
+<p>then Cyclone no longer issues a warning at the call to getc and the
+resulting code does not have to do a null check.</p>
+
+<p>If you call getc with a <code>FILE *@notnull</code>, of course, no check is
+required. For example, stdin is a <code>FILE *@notnull</code> in Cyclone, so you
+can simply call getc(stdin). In Cyclone you will find that many
+functions return <code>*@notnull</code> pointers, so many of the pointers you
+deal with will already be <code>*@notnull</code> pointers, and neither the caller
+nor the called function needs to do null checks&#8212;and this is perfectly
+safe.</p>
+
+<p>Like @fat pointers, @notnull pointers are so useful, Cyclone provides
+an abbreviation. Instead of writing FILE *@notnull, you can simply
+write FILE @ when you want to write the type of a non-NULL pointer to
+a FILE.</p>
+
+<h4>Zero-Terminated Pointers</h4>
+
+<p>Fat pointers support arbitrary pointer arithmetic and subscripting,
+but they don&#8217;t have the same representation as pointers in C. This is
+because we need extra information to determine the bounds and ensure
+that a subscript or dereference is in bounds. Unfortunately, this
+change in representations can make it difficult to interface with
+legacy C code where the representations might not be easily changed.</p>
+
+<p>Fortunately, Cyclone supports one more pointer type where the
+representation matches C&#8217;s and yet supports a limited form of pointer
+arithmetic and subscripting: the zero-terminated pointer. A
+zero-terminated pointer is a pointer to a sequence of elements that
+are guaranteed to be terminated with a zero. C&#8217;s strings are a good
+example. In Cyclone, the type of C&#8217;s strings can be written as char
+*@zeroterm. The @zeroterm qualifier indicates that the pointer points
+to a zero-terminated sequence. The qualifier is orthogonal to other
+qualifiers, such as @fat or @notnull, so you can freely combine them.</p>
+
+<p>Because C strings arise so frequently, the types <code>char *</code>, <code>char
+*@notnull</code>, and <code>char *@fat</code> are by default qualified with
+@zeroterm. You can override the @zeroterm qualifier on char pointers
+by putting in an explicit @nozeroterm qualifier (e.g.,
+<code>char *@nozeroterm</code>). Pointers to other types (e.g., <code>int *</code>) have a default
+qualifier of @nozeroterm.</p>
+
+<p>If x is a <code>*@zeroterm</code> pointer, you can use pointer arithmetic on it,
+as in x+i. However, the compiler inserts checks to ensure that (a) i
+is non-negative and (b) there is no zero between x[0] and x[i-1]
+inclusive. This ensures that you can&#8217;t read past the terminating
+zero. In addition, when writing to a zero-terminated pointer, the
+compiler inserts checks to ensure that you don&#8217;t replace the final
+zero with some other value. This is crucial for ensuring that a buffer
+overrun cannot occur. As in C, x[i] is equivalent to x+i, so
+subscripts come with the same checks.</p>
+
+<p>Because of these checks, subscripts and pointer arithmetic on
+<code>*@zeroterm</code> can be fairly expensive. In particular, if you are not
+careful, you can turn what appears to be an <em>O(n)</em> algorithm into an
+<em>O(n-squared)</em> one. You can avoid this overhead by casting the pointer
+to a @fat zero-terminated pointer. This computes the length of the
+sequence once and then uses the bounds information associated with the
+fat pointer to do any bounds checks.</p>
+
+<p>Cyclone&#8217;s constraints on zero-terminated pointers mean that you have
+to be careful when porting code from C. For instance, consider the
+following function:</p>
+
+<pre><code>  void foo(char *s, int offset) {
+     unsigned int len = strlen(s);
+     for (unsigned int i = 0; offset+i &lt; len; i++)
+        s[offset+i] = 'a';
+  }
+</code></pre>
+
+<p>This code can be quite expensive when offset is large because the
+compiler must check that there is no intervening zero between s[0] and
+s[offset+i] for each iteration of the loop. You can get rid of this
+overhead by rewriting the code as follows:</p>
+
+<pre><code>  void foo(char *s, int offset) {
+     unsigned int len = strlen(s);
+     s = s + offset;
+     for (unsigned int i = 0; offset+i &lt; len; i++, s++)
+        *s = 'a';
+  }
+</code></pre>
+
+<p>Now the compiler is only checking that <code>*s</code> is not zero when it does
+the increment s++. In addition, however, the compiler is checking each
+time you do <code>*s = 'a'</code> that <code>*s</code> is not zero, because then you could
+overwrite the zero with an <code>'a'</code> and potentially step outside the
+bounds of the buffer.</p>
+
+<p>One way to get rid of all of these checks is to cast s to a
+non-zero-terminated fat pointer before entering the loop. When you
+cast a zero-terminated pointer to a non-zero-terminated fat pointer,
+the compiler calculates the length of the sequence once, decrements it
+by one, and then builds an appropriate fat pointer with this bounds
+information. When you write using the fat pointer, bounds checks (not
+zero checks) keep you from writing any value over the
+zero. Furthermore, if you write the code in a straightforward fashion
+using subscripting, the compiler is more likely to eliminate the
+bounds checks. Here is an example:</p>
+
+<pre><code>  void foo(char *s, int offset) {
+    char *@fat @nozeroterm fat_s = (char *@fat @nozeroterm)s;
+    unsigned int len;
+    fat_s += offset;
+    len = numelts(fat_s);
+    for (unsigned int i = 0; i &lt; len; i++)
+      fat_s[i] = 'a';
+  }
+</code></pre>
+
+<p>The Cyclone compiler generates code that works like the following C
+code:</p>
+
+<pre><code>struct _tagged_arr {
+  char *base;
+  char *curr;
+  char *last;
+};
+
+void Cyc_foo(char *s,int offset){
+  struct _tagged_arr fat_s = {s, s, s+strlen(s)};
+  unsigned int len;
+  fat_s.curr += offset;
+  if (fat_s.curr &lt; fat_s.base || fat_s.curr &gt;= fat_s.last)
+    len = 0;
+  else
+    len = fat_s.last - fat_s.curr;
+  { unsigned int i = 0;
+    for(0; i &lt; len; i++)
+      fat_s.curr[i] = 'a';
+  }
+}
+</code></pre>
+
+<p>Notice that here, the compiler is able to eliminate all bounds checks
+within the loop and still ensure safety.</p>
+
+<h4>Bounded Pointers</h4>
+
+<p>A pointer type can also specify that it points to a sequence of a
+particular (statically known) length using the @numelts qualifier. For
+instance, we can write:</p>
+
+<pre><code>void foo(int *@numelts(4) arr);
+</code></pre>
+
+<p>Here, the parameter arr is a pointer to a sequence of four integer
+values. Both the non-null and nullable pointers (but not fat pointers)
+support explicit sequence bounds that are tracked statically. Indeed,
+both pointer kinds always have length information and when you write
+&#8220;int *&#8221; this is just short-hand for &#8220;int *@numelts(1)&#8221;.</p>
+
+<p>Bounded pointers are most often constructed from arrays. In
+particular, whenever you pass an array as a parameter to a function,
+it is <em>promoted</em> automatically to a pointer, following the rules of
+C. This pointer will have a sequence bound that is the same as the
+length of the array. Here is an example of calling foo above:</p>
+
+<pre><code>int x[4] = {1,2,3,4};
+int y[8] = {1,2,3,4,5,6,7,8};
+foo(x);
+foo(y);
+</code></pre>
+
+<p>In the first call, the parameter x being passed to foo is
+automatically cast to type <code>int *@numelts(4)</code>, which is the type
+expected by foo. In the second case, the type of y is automatically
+cast to type <code>int *@numelts(8)</code>. Since 8 ≥ 4, the call is safe
+and so Cyclone accepts it but emits a warning &#8220;implicit cast to
+shorter array.&#8221; Finally, the following code will be rejected, because
+the pointer being passed is too short:</p>
+
+<pre><code>int bad[2] = {1,2};
+foo(bad); // does not typecheck
+</code></pre>
+
+<p>Finally, bounded pointers can also be used to correlate a pointer to
+an array whose length is not known statically with a variable that
+defines it. For example, C programmers often write code like the
+following:</p>
+
+<pre><code>  int sum(int num, int *p) {
+    int a = 0;
+    for (unsigned i = 0; i &lt; num; i++)
+      a += p[i];
+  }
+</code></pre>
+
+<p>Here, num is the length of the array pointed at by p. In Cyclone, this
+relationship can be expressed by giving sum the following type (the
+body of the function is the same):</p>
+
+<pre><code>int sum(tag_t&lt;`n&gt; num,
+        int *@notnull @numelts(valueof(`n)) p) {
+</code></pre>
+
+<p>The type of num is specified as <code>tag_t&lt;`n&gt;</code>. This simply means that
+num holds an integer value, called <code>`n</code>, and the number of elements
+of p is equal to n. This form of dependency is common enough that it
+can be abbreviated as follows:</p>
+
+<pre><code>  int sum(tag_t num, int p[num]);
+</code></pre>
+
+<p>and the compiler will fill in the missing information.</p>
+
+<p>A bounded pointer paired with a tag_t is quite similar to a fat
+pointer.  Indeed, you can convert between the two using the library
+functions mkfat and mkthin.</p>
+
+<h4>Initializing Pointers</h4>
+
+<p>Pointers must be initialized before they are used to ensure that
+unknown bits do not get used as a pointer. This requirement goes for
+variables that have pointer type, as well for arrays, elements of
+arrays, and for fields in structures. Conversely, data that does not
+have pointer type need not be initialized before it is used, since
+doing so cannot result in a violation of safety. This decision adheres
+to the philosophy of C, but diverges from that of traditional
+type-safe languages like Java and ML. The rules for initialization of
+pointers used by Cyclone are described in <a href='/wiki/Definite Assignment'>Definite Assignment</a>.</p>
+
+<h3>Regions <a name="Regions"></a></h3>
+
+<p>Another potential way to crash a program or violate security is to
+dereference a <em>dangling pointer</em>, which is a pointer to storage that
+has been deallocated. These are particularly insidious bugs because
+the error might not manifest itself immediately. For example, consider
+the following C code:</p>
+
+<pre><code>struct Point {int x; int y;};
+
+struct Point *newPoint(int x,int y) {
+  struct Point result = {x,y};
+  return &amp;result;
+}
+
+void foo(struct Point *p) {
+  p-&gt;y = 1234;
+  return;
+}
+
+void bar() {
+  struct Point *p = newPoint(1,2);
+  foo(p);
+}
+</code></pre>
+
+<p>The code has an obvious bug: the function newPoint returns a pointer
+to a locally-defined variable (result), even though the storage for
+that variable is deallocated upon exit from the function. That storage
+may be re-used (<em>e.g.</em>, by a subsequent procedure call) leading to
+subtle bugs or security problems. For instance, in the code above,
+after bar calls newPoint, the storage for the point is reused to store
+information for the activation record of the call to foo. This
+includes a copy of the pointer p and the return address of
+foo. Therefore, it may be that p->y actually points to the return
+address of foo. The assignment of the integer 1234 to that location
+could then result in foo &#8220;returning&#8221; to an arbitrary hunk of code in
+memory. Nevertheless, the C type-checker readily admits the code.</p>
+
+<p>In Cyclone, this code would be rejected by the type-checker to avoid
+the kind of problems mentioned above. The reason the code is rejected
+is that the Cyclone compiler tracks object lifetimes and ensures that
+a pointer to an object can only be dereferenced if that object has not
+been deallocated.</p>
+
+<p>Cyclone achieves this by assigning each object a symbolic <em>region</em>
+that corresponds to the area of memory in which the object is
+allocated. Cyclone also tracks, for every pointer, what region it
+points into. The region pointed to can be written as part of the
+pointer type, but usually the region can be omitted&#8211;the compiler is
+smart enough to discover the region automatically in many cases.</p>
+
+<p>For example, the variable result in our code above lives within a
+region that corresponds to the invocation of the function newPoint. We
+write the name of the region explicitly using a back-quote, as in
+<code>`newPoint</code>. Because result lives in region <code>`newPoint</code>, the expression
+&amp;result is a pointer into region <code>`newPoint</code>. The full Cyclone type of
+&amp;result, with the explicit region, is <code>struct Point *
+@region(`newPoint)</code>.</p>
+
+<p>A region that corresponds to a lexical block, like an activation
+record, is referred to as a <em>stack region</em>, since it corresponds to a
+piece of the runtime stack. When control flow exits a block, the
+storage (<em>i.e.</em>, the stack region) for that block is
+deallocated. Cyclone keeps track of the set of regions that are
+allocated and deallocated at every control-flow point and ensures that
+you only dereference pointers to allocated regions. For example,
+consider the following fragment of (bad) Cyclone code:</p>
+
+<pre><code>1 int f() {
+2    int x = 0;
+3    int *@region(`f) y = &amp;x;
+4    L:{ int a = 0;
+5        y = &amp;a;
+6      }
+7    return *y;
+8 }
+</code></pre>
+
+<p>In the function f above, the variables x and y live within the region
+<code>`f</code> because they are declared in the outermost block of the function,
+and because the default region name for the block of a function is
+<code>`&lt;function name&gt;</code>. The storage for those variables will live as long as
+the invocation of the function. Note that since y is a pointer to x,
+the type of y is <code>int *@region(`f)</code>, indicating that y points into
+region <code>`f</code>.</p>
+
+<p>The variable a does <em>not</em> live in region <code>`f</code>, because it is
+declared in an inner block, which we have labeled with L. The storage
+for the inner block L may be deallocated upon exit of the block,
+before the function itself returns. To be more precise, the storage
+for a is deallocated at line 6 in the code. Thus, it is an error to
+try to access this storage in the rest of the computation, as is done
+on line 7.</p>
+
+<p>Cyclone detects the error because it gives the expression &amp;a the type
+<code>int *@region(`L)</code>, meaning that the value is a pointer into region
+<code>`L</code>. So, the assignment <code>y = &amp;a</code> fails to type-check because y
+expects to hold a pointer into region <code>`f</code>, not region <code>`L</code>. The
+restriction, compared to C, is that a pointer&#8217;s type indicates <em>one</em>
+region instead of <em>all</em> regions.</p>
+
+<h4>Region Inference</h4>
+
+<p>If you had to write a @region qualifier on every pointer type, then
+writing code would be unpleasant. Fortunately, Cyclone provides a
+number of mechanisms to cut down on the region annotations you have to
+write.</p>
+
+<p>First off, you can omit the @region qualifier keyword and simply write
+the region name (e.g., <code>`r</code>) as long as you put the region name
+after any other qualifiers. For instance, instead of writing
+&#8220;<code>int *@notnull @region(`r)</code>&#8221; we can simply write &#8220;<code>int @`r</code>&#8221;.
+For clarity, we will often use an explicit @region qualifier, but
+you&#8217;ll find that the libraries and other example programs frequently
+use the abbreviations.</p>
+
+<p>In addition, Cyclone often figures out the region of a pointer without
+the programmer providing the information. This is called <em>region
+inference</em>. For instance, we can rewrite the function f above without
+any region annotations, and without labeling the blocks:</p>
+
+<pre><code>1 int f() {
+2    int x = 0;
+3    int *y = &amp;x;
+4    { int a = 0;
+5      y = &amp;a;
+6    }
+7    return *y;
+8 }
+</code></pre>
+
+<p>Cyclone can still figure out that y is a pointer into region <code>`f</code>,
+and &amp;a is a pointer into a different (now anonymous) region, so the
+code should be rejected.</p>
+
+<p>As we will show below, occasionally you will need to put explicit
+region annotations into the code to convince the type-checker that
+something points into a particular region, or that two things point
+into the same region. In addition, it is sometimes useful to put in
+the region annotations for documentation purposes, or to make type
+errors less cryptic. See <a href='/wiki/Type Inference'>Type Inference</a> for more information about
+region inference.</p>
+
+<p>You need to understand a few more details about regions to be an
+effective Cyclone programmer: the heap region, LIFO regions, region
+polymorphism, and default region annotations for function
+parameters. The following sections give a brief overview of these
+topics. Information about additional region-based constructs,
+including the unique and reference-counted regions, and dynamic
+regions, can be found in <a href='/wiki/Memory Management Via Regions'>Memory Management Via Regions</a>.</p>
+
+<h4>The Heap Region</h4>
+
+<p>There is a special region for the heap, written `H, that holds all of
+the storage for top-level variables, and for data allocated via new or
+malloc. For instance, if we write the following declarations at the
+top-level:</p>
+
+<pre><code>struct Point p = {0,1};
+struct Point *ptr = &amp;p;
+</code></pre>
+
+<p>then Cyclone figures out that ptr points into the heap region. To
+reflect this explicitly, we can put the region in the type of ptr if
+we like:</p>
+
+<pre><code>struct Point p = {0,1};
+struct Point *@region(`H) ptr = &amp;p;
+</code></pre>
+
+<p>As another example, the following function heap-allocates a Point and
+returns it to the caller. We put the regions in here to be explicit:</p>
+
+<pre><code>struct Point *@region(`H) good_newPoint(int x,int y) {
+  struct Point *@region(`H) p =
+    malloc(sizeof(struct Point));
+  p-&gt;x = x;
+  p-&gt;y = y;
+  return p;
+}
+</code></pre>
+
+<p>Alternatively, we can use new to heap-allocate and initialize the
+result:</p>
+
+<pre><code>struct Point *@region(`H) good_newPoint(int x,int y) {
+  return new Point{x,y};
+}
+</code></pre>
+
+<h4>LIFO Regions</h4>
+
+<p>Storage on the stack is implicitly allocated and recycled when you
+enter and leave a block. Storage in the heap is explicitly allocated
+via new or malloc, but there is no support in Cyclone for explicitly
+freeing an object in the heap. The reason is that Cyclone cannot in
+general track the lifetimes of individual objects within the heap
+accurately, so it can&#8217;t be sure whether dereferencing a pointer into
+the heap would cause problems. Instead, unless otherwise specified, a
+conservative garbage collector is used to reclaim the data allocated
+in the heap. We also support <em>unique pointers</em> and <em>reference-counted
+pointers</em> that programmers can safely free manually, but we defer
+discussion of these features to <a href='/wiki/Memory Management Via Regions'>Memory Management Via Regions</a>.</p>
+
+<p>Using a garbage collector to recycle memory is the right thing to do
+for most applications. For instance, the Cyclone compiler uses
+heap-allocated data and relies upon the collector to recycle most
+objects it creates when compiling a program. But a garbage collector
+can introduce pauses in the program, and as a general purpose memory
+manager, might not be as space- or time-efficient as routines tailored
+to an application.</p>
+
+<p>To address these applications, Cyclone provides support for <em>LIFO
+regions</em>. A LIFO region is similar to a stack region in that its
+lifetime is lexically-scoped (last-in-first-out, or LIFO) but permits
+dynamic allocation. Consider the following syntax:</p>
+
+<pre><code>{ region&lt;`r&gt; h;
+   ...
+}
+</code></pre>
+
+<p>This declares a new region <code>`r</code> along with a <em>region handle</em> h. The
+handle can be used for dynamically-allocating objects within the
+region <code>`r</code>. Like a stack region, all of the storage for the region
+is deallocated at the point of the closing brace. Unlike stack
+regions, the number (and size) of objects that you allocate into a
+LIFO region is not fixed at compile time. In this respect, LIFO
+regions are more like the heap. You can use the rnew(h) and
+rmalloc(h,&#8230;) operations to allocate objects within a growable
+region, where h is the handle for the region.</p>
+
+<p>For instance, the following code takes an integer <em>n</em>, creates a new
+dynamic region and allocates an array of size <em>n</em> within the region
+using rnew.</p>
+
+<pre><code>int k(int n) {
+  int result;
+  { region&lt;`r&gt; h;
+    int ?arr = rnew(h) {for i &lt; n : i};
+    result = process(h, arr);
+  }
+  return result;
+}
+</code></pre>
+
+<p>It then passes the handle for the region and the array to some
+processing function. Note that the processing function is free to
+allocate objects into the region <code>`r</code> using the supplied
+handle. After processing the array, we exit the region which
+deallocates the array, and then return the calculated result.</p>
+
+<p>LIFO regions are particularly useful in this circumstance; i.e., when
+you want the result of a function call to be allocated in the caller,
+but you don&#8217;t know how much space you&#8217;ll need.  An another example,
+consider the following usage of the Cyclone library function rprintf:</p>
+
+<pre><code>  { region&lt;`r&gt; h;
+    char ?`H s = get_username();
+    char ?`r z = rprintf(h,"hello %s\n");
+    emit(z);
+  }
+</code></pre>
+
+<p>After allocating the region and acquring a user&#8217;s name, the region
+handle is passed to the library function rprintf. rprintf is like
+sprintf, except that it does not print to a fixed-sized buffer;
+instead it allocates a buffer in a region, places the formatted output
+in the buffer, and returns a pointer to the buffer. In the example
+above, z is initialized with a pointer to the string &#8220;hello&#8221; followed
+by the user&#8217;s name; z is allocated in h&#8217;s region. Unlike sprintf,
+there is no risk of a buffer overflow, and unlike snprintf, there is
+no risk of passing a buffer that is too small. Moreover, the allocated
+buffer will be freed when the region goes out of scope, just as a
+stack-allocated buffer would be.</p>
+
+<p>Finally, it is worth remarking that it may help to think of the heap
+as just a LIFO region with unbounded scope. Indeed, you can use the
+global variable <code>Core::heap_region</code> as a handle on the heap, and new
+and malloc(&#8230;) are just abbreviations for <code>rnew(Core::heap_region)</code>
+and <code>rmalloc(Core::heap_region,...)</code> respectively.</p>
+
+<h4>Region Polymorphism</h4>
+
+<p>Another key concept you need to understand is called <em>region
+polymorphism</em>. This is just a fancy way of saying that you can write
+functions in Cyclone that don&#8217;t care which specific region a given
+object lives in, as long as it&#8217;s still alive. For example, the
+function foo from the beginning of this section is a
+region-polymorphic function. To make this clear, let us re-write the
+foo function from above, making the region of its argument explicit:</p>
+
+<pre><code>void foo(struct Point *@region(`r) p) {
+  p-&gt;y = 1234;
+  return;
+}
+</code></pre>
+
+<p>The function is parameterized by a <em>region variable</em> <code>r, and accepts a
+pointer to a Point that lives in region</code>r. When calling foo, <code>r can
+be _instantiated_ with any region you like, including the heap</code>H, or
+a region local to a function. So, for instance, we can write the
+following:</p>
+
+<pre><code>void g() {
+  struct Point p = {0,1};
+  struct Point *@region(`g) ptr1 = &amp;p;
+  struct Point *@region(`H) ptr2 = new Point{2,3};
+  foo(ptr1);
+  foo(ptr2);
+}
+</code></pre>
+
+<p>Note that in the first call to foo, we are passing a pointer into
+region <code>g, and in the second call to foo, we are passing in a pointer
+into the heap. In the first call,</code>r is implicitly instantiated with
+<code>g, and in the second call, with</code>H.</p>
+
+<p>Region polymorphism is a specific form of <em>parametric polymorphism</em>
+which Cyclone supports in general, as we describe
+<a href="#PolymorphicFunctions">below</a>.</p>
+
+<h4>Default Region Annotations</h4>
+
+<p>Cyclone automatically assigns region variables to function arguments
+that have pointer type, so you rarely have to write them. For
+instance, foo can be written simply as:</p>
+
+<pre><code>void foo(struct Point * p) {
+  p-&gt;y = 1234;
+  return;
+}
+</code></pre>
+
+<p>As another example, if you write the following:</p>
+
+<pre><code>void h(struct Point * p1, struct Point * p2) {
+  p1-&gt;x += p2-&gt;x;
+  p2-&gt;x += p2-&gt;y;
+}
+</code></pre>
+
+<p>then Cyclone fills in the region parameters for you by assuming that
+the points p1 and p2 can live in any two regions, and so it generates
+assigns fresh names for the region variables of p1 and p2,
+e.g. something like <code>r1 and</code>r2. To make this explicit, we would
+write:</p>
+
+<pre><code>void h(struct Point *@region(`r1) p1,
+       struct Point *@region(`r2) p2) {
+  p1-&gt;x += p2-&gt;x;
+  p2-&gt;x += p2-&gt;y;
+}
+</code></pre>
+
+<p>Now we can call h with pointers into any two regions, or even two
+pointers into the same region. This is because the code is
+type-correct <em>for all</em> regions <code>r1 and</code>r2.</p>
+
+<p>Occasionally, you will have to put region parameters in
+explicitly. This happens when you need to assert that two pointers
+point into the same region. Consider for instance the following
+function:</p>
+
+<pre><code>void j(struct Point * p1, struct Point * p2) {
+  p1 = p2;
+}
+</code></pre>
+
+<p>Cyclone will reject the code because it assumes that in general, p1
+and p2 might point into <em>different</em> regions. The error is roughly the
+following:</p>
+
+<pre><code>foo.cyc:2: type mismatch:
+     struct Point *`GR0 != struct Point *`GR1
+  `GR1 and `GR0 are not compatible.
+     (variable types are not the same)
+</code></pre>
+
+<p>Cyclone has picked the name GR1 for p1&#8217;s region, and GR2 for p2&#8217;s
+region. That is, Cyclone fills in the missing regions as follows:</p>
+
+<pre><code>void j(struct Point *@region(`GR1) p1,
+       struct Point *@region(`GR2) p2) {
+  p1 = p2;
+}
+</code></pre>
+
+<p>Now it is clear that the assignment does not type-check because the
+types of p1 and p2 differ. In other words, <code>`GR1</code> and <code>`GR2</code>
+<em>might</em> be instantiated with different regions, in which case the code
+would be incorrect. For example, we could call j as follows:</p>
+
+<pre><code>void g() {
+  struct Point p = {0,1};
+  struct Point *@region(`g) ptr1 = &amp;p;
+  struct Point *@region(`H) ptr2 = new Point{2,3};
+  j(ptr2,ptr1);
+}
+</code></pre>
+
+<p>Doing this would effectively allow us to assign ptr1 to ptr2, which is
+unsafe in general, since the heap outlives the stack region for g.</p>
+
+<p>But you can require that j&#8217;s regions be instantiated with the same
+region by explicitly specifying the same explicit region variable for
+each pointer. Thus, the following code does type-check:</p>
+
+<pre><code>void j(struct Point *@region(`r) p1,
+       struct Point *@region(`r) p2) {
+  p1 = p2;
+}
+</code></pre>
+
+<p>This would prevent the situation in function g above, since the
+arguments passed to j must be allocated in the same region.</p>
+
+<p>So, Cyclone assumes that each pointer argument to a function is in a
+(potentially) different region unless you specify otherwise. The
+reason we chose this as the default is that (a) it is often the right
+choice for code, (b) it is the most general type in the sense that if
+it does work out, clients will have the most lattitude in passing
+arguments from different regions or the same region to the function.</p>
+
+<p>What region variable is chosen for return-types that mention pointers? Here, there is no good answer because the region of the result of a function cannot be easily determined without looking at the body of the function, which defeats <em>separate compilation</em> of function definitions from their prototypes. Therefore, we have arbitrarily chosen the heap as the default region for function results. Consequently, the following code type-checks:</p>
+
+<pre><code>struct Point * good_newPoint(int x,int y) {
+  return new Point{x,y};
+}
+</code></pre>
+
+<p>This is because the new operator returns a pointer to the heap, and
+the default region for the return type is the heap.</p>
+
+<p>This also explains why the newPoint function (page [??][13]) for
+allocating a new Point does not type-check:</p>
+
+<pre><code>struct Point *newPoint(int x,int y) {
+  struct Point result = {x,y};
+  return &amp;result;
+}
+</code></pre>
+
+<p>The expression &amp;result is a pointer into region <code>`newPoint</code> but the
+result type of the function must be a pointer into the heap (region
+<code>`H</code>).</p>
+
+<p>If you want to return a pointer that is not in the heap region, then
+you need to put the region in explicitly. For instance, the following
+code:</p>
+
+<pre><code>int * id(int *x) {
+  return x;
+}
+</code></pre>
+
+<p>will not type-check. To see why, let us rewrite the code with the
+default region annotations filled in. The argument is assumed to be in
+a region `GR1, and the result is assumed to be in the heap, so the
+fully elaborated code is:</p>
+
+<pre><code>int *@region(`H) id(int *@region(`GR1) x) {
+  return x;
+}
+</code></pre>
+
+<p>Now the type-error is manifest. To fix the code, we must put in
+explicit regions to connect the argument type with the result
+type. For instance, we might write:</p>
+
+<pre><code>int *@region(`r) id(int *@region(`r) x) {
+  return x;
+}
+</code></pre>
+
+<p>or using the abbreviation:</p>
+
+<pre><code>int *`r id(int *`r x) {
+  return x;
+}
+</code></pre>
+
+<h4>Region Summary</h4>
+
+<p>In summary, each pointer in Cyclone points into a given region and
+this region is reflected in the type of the pointer. Cyclone will not
+let you dereference a pointer into a deallocated region. The lexical
+blocks declared in functions correspond to one type of region (a
+<em>stack region</em>), and simply declaring a variable within that block
+allocates storage within the region. The storage is deallocated upon
+exit of the block. LIFO regions are similar, except that a dynamic
+number of objects can be allocated within the region using the
+region&#8217;s handle. Both stack and LIFO regions have structured
+lifetimes. Finally, the heap region `H is a special region whose dead
+objects are garbage collected.</p>
+
+<p>Region polymorphism and region inference make it possible to omit many region annotations on types. By default, Cyclone assumes that unannotated pointer arguments in functions may live in distinct regions, and that unannotated result pointers are in the heap. These assumptions are not perfect, but programmers can fix the assumptions by providing explicit region annotations, and they permit Cyclone files to be separately compiled.</p>
+
+<p>The region-based type system of Cyclone is perhaps the complicated
+aspect of the language. In large part, this is because memory
+management is a difficult and tricky business. We have attempted to
+make stack allocation and region polymorphic functions simple to use
+without sacrificing programmer control over the lifetimes of objects
+and without (always) having to resort to garbage collection. As more
+advanced features, we also provide even finer control over object
+lifetimes, but at the expense of more work from the programmer, using
+the <em>unique region</em> and <em>reference-counted</em> regions. In turn, these
+can be used to create <em>dynamic regions</em>, which support run-time
+allocation like LIFO regions, but have dynamic scope. For more
+information on these, and regions in general, see
+<a href='/wiki/Memory Management Via Regions'>Memory Management Via Regions</a>.</p>
+
+<h3>Arrays <a name="Arrays"></a></h3>
+
+<p>Arrays in Cyclone are much as in C, and have a similar relationship to
+pointers, as we discussed earlier. However, there are more ways to
+create arrays in Cyclone, but with some restrictions on how they are
+initialized.</p>
+
+<p>One can always declare an array and provide an initializer as in
+C. For instance:</p>
+
+<pre><code>  int foo[8] = {1,2,3,4,5,6,7,8};
+  char s[4] = "bar";
+</code></pre>
+
+<p>are both examples from C for creating arrays. Note that Cyclone
+follows C&#8217;s conventions here, so that if you declare arrays as above
+within a function, then the lifetime of the array coincides with the
+activation record of the enclosing scope. In other words, such arrays
+will be stack-allocated. Also note that by default, char arrays are
+<em>not</em> considered zero-terminated. To make them so, you must add the
+@zeroterm qualifier following the size of the array, as in</p>
+
+<pre><code>  char s[4] @zeroterm = "bar";
+</code></pre>
+
+<p>In both cases, the size of the array must include the zero terminator.</p>
+
+<p>To create heap-allocated arrays (or strings) within a Cyclone
+function, you should either use &#8220;new&#8221; or &#8220;rnew&#8221; operator with either
+an array initializer or an <em>array comprehension</em>. The following code
+demonstrates this:</p>
+
+<pre><code>  // foo is a pointer to a heap-allocated array
+  int * @numelts(8) foo = new {1,2,3,4,5,6,7,8};
+
+  // s is a checked pointer to a heap-allocated string
+  char * @fat s = new {'b','a','r',0};
+
+  // a non-null pointer to the first 100 even numbers
+  int * @notnull @numelts(100) evens = new {for i &lt; 100 : 2*i};
+</code></pre>
+
+<p>The last initializer is an array comprehension. The syntax is a
+simplified for loop: it declares the iterator variable i and its bound
+100, indicating that i will iterate between 0 and 99. The part
+following the colon is the expression used to initialize the ith
+element of the array. In this example, the initializer is equivalent
+to writing</p>
+
+<pre><code>  int * @notnull @numelts(100) evens = new {0,2,4,6,...,198};
+</code></pre>
+
+<p>Where the &#8230; represents the remaining even numbers in the sequence.</p>
+
+<p>Finally, we note that it is not possible to create arrays that contain
+pointers without initializing them first. This is just as with normal
+pointers as discussed earlier. Moreover, Cyclone requires that
+pointerful arrays are initialized all at once, rather than one
+statement at a time. This is because Cyclone is not smart enough to
+know whether you have initialized an entire array, in general. For
+example, the following code would be rejected:</p>
+
+<pre><code>void f(int * p) {
+  int *x[2];
+  x[0] = p;
+  x[1] = p;
+}
+</code></pre>
+
+<p>Arrays that do not contain pointers need not be completely initialized
+in general to ensure safety, so how they are initilaized is up to the
+programmer.</p>
+
+<h3>Structs <a name="Structs"></a></h3>
+
+<p>Cyclone supports struct types just as in C. Quite often, a C struct
+declaration will be accepted without change by the Cyclone
+compiler. Cyclone supports two extensions to struct types in C:
+<em>tuples</em>, which are lightweight, &#8220;unnamed&#8221; structs, and
+<em>parameterization</em> for creating more generic datastructures. We
+consider tuples below, and delay talking about parameterization until
+[a bit later][15];</p>
+
+<p>Tuples are like structs that need not be declared in advance; they
+have member or field names that are implicitly 0, 1, 2, 3, etc. For
+example, the following code declares x to be a 3-tuple of an integer,
+a character, and a boolean, initialized with the values 42, &#8216;z&#8217;, and
+true respectively. It then checks to see whether the third component
+in the tuple is true (it is) and if so, increments the first component
+in the tuple.</p>
+
+<pre><code>  $(int,char,bool) x = $(42,'z',true)
+
+  if (x[2])
+    x[0]++;
+</code></pre>
+
+<p>The above code would be roughly equivalent to writing:</p>
+
+<pre><code>  struct {int f0; char f1; bool f2;} x = {42,'z',true};
+  if (x.f2)
+    x.f1++;
+</code></pre>
+
+<p>Thus, tuple types are written $(type1,&#8230;,typen), tuple constructor
+expressions are written $(exp1,&#8230;,expn), and extracting the ith
+component of a tuple is written using subscript notation
+exp[i-1]. Note that, consistent with the rest of C, the members start
+with 0, not 1.</p>
+
+<p>Unlike structs, tuple types are treated equivalent as long as they are
+structurally equivalent. As in C, struct types are equivalent only if
+they have the same tag or name. (Note that in C, all struct
+declarations have a tag, even if the compiler has to generate one.)</p>
+
+<h3>Unions <a name="Unions"></a></h3>
+
+<p>It&#8217;s often necessary to write a function that accepts an argument with
+more than one possible type. For example, in</p>
+
+<pre><code>    printf("%d",x);
+</code></pre>
+
+<p>x should be an integer, but in</p>
+
+<pre><code>    printf("%s",x);
+</code></pre>
+
+<p>x should be a pointer to a sequence of characters.</p>
+
+<p>If we call printf(&#8220;%s&#8221;,x) with an integer x, instead of a pointer x,
+the program will likely crash. To prevent this, most C compilers treat
+printf specially: they examine the first argument and require that the
+remaining arguments have the appropriate types. However, a compiler
+can&#8217;t check this if printf isn&#8217;t called with a literal format string:</p>
+
+<pre><code>    printf(s,x);
+</code></pre>
+
+<p>where s is a string variable. This means that in C, programs that use
+printf (or scanf, or a number of related functions) are vulnerable to
+crashes and corrupted memory. In fact, it&#8217;s possible for someone else
+to crash your program by causing it to call printf with arguments that
+don&#8217;t match the format string. This is called a <em>format string
+attack</em>, and it&#8217;s an increasingly common exploit.</p>
+
+<h4>Tagged Unions</h4>
+
+<p>Cyclone provides <em>tagged unions</em> so that you can safely write
+functions that accept an argument with more than one possible
+type. Like a C union, a Cyclone @tagged union is a type that has
+several possible cases. Here&#8217;s a simple example:</p>
+
+<pre><code>    @tagged union T {
+      int Integer;
+      const char *@fat String;
+    };
+    union T x = {.Integer = 3};
+    union T y = {.String = "hello, world"};
+</code></pre>
+
+<p>This declares a new tagged union type T, that can hold either an
+integer or a string (remember, a literal string can always be
+converted to a char *@fat in Cyclone). It also declares to union T
+values x and y and initializes them with an integer and string
+respectively.</p>
+
+<p>Just as with C unions, you can read and write any member of a tagged
+union. However, to prevent security holes, Cyclone enforces the
+property that you can only read the last member written. This prevents
+you from accidentally treating an integer as if it&#8217;s a string or some
+other kind of pointer.</p>
+
+<p>Cyclone enforces this safety property by inserting a hidden tag into
+the union (hence the @tagged qualifier.) You can test the tag by using
+the built-in tagcheck function. For instance, here is a function that
+uses the real printf to safely print out the contents of a union T
+value, regardless of its contents:</p>
+
+<pre><code>    bool printT(union T w) {
+      if (tagcheck(w.Integer))
+        printf("%d",w);
+      else
+        printf("%s",w);
+    }
+</code></pre>
+
+<p>Note that tagcheck(w.Integer) does not return the value of the Integer
+member, but rather returns true if and only if the Integer member was
+the last member written (and is thus safe to read.)</p>
+
+<p>Each write to a tagged union member causes the hidden tag to be
+updated, and each read is preceded by a check to ensure that the
+member was the last one written. If you attempt to read some member
+other than the last one written, then the Match exception is
+thrown. For example, the following code writes the String member and
+then attempts to read the Integer member, so it will throw a Match
+exception:</p>
+
+<pre><code>    union T a;
+    int x;
+    a.String = "hello, world";
+    /* Next line fails */
+    x = a.Integer + 3;
+</code></pre>
+
+<p>When you have a big union, it can be awkward to use tagcheck to test the hidden tag. You might accidentally test the wrong member or forget to cover a member. In these cases, its probably best to use <em>pattern matching</em> to determine the tag and to extract the underlying value. For example, here is the function printT coded with pattern matching:</p>
+
+<pre><code>    void printT(union T a) {
+      switch (a) {
+      case {.Integer = i}: printf("%d",i); return;
+      case {.String = s}: printf("%s",s); return;
+      }
+    }
+</code></pre>
+
+<p>The argument a has type union T, so it is either an Integer or
+String. Cyclone extends switch statements with <em>patterns</em> that
+distinguish between the cases. The first case,</p>
+
+<pre><code>   case {.Integer = i}: printf("%d",i); return;
+</code></pre>
+
+<p>contains a pattern, {Integer = i}, that will match only T values where
+the Integer member was the last one written. The variable i is bound
+to the underlying integer, and it can be used in the body of the
+case. For example, printT(x) will print 3, since x holds {.Integer =
+3}, and printT(y) will print hello, world. You can find out more about
+patterns in <a href='/wiki/Pattern Matching'>Pattern Matching</a>.</p>
+
+<h4>Untagged Unions</h4>
+
+<p>Cyclone also supports untagged unions, but there are restrictions on
+how they may be used to ensure safety. In particular, you can write
+any value you like into a union, but you can only read out values that
+do not contain pointers. This ensures that you don&#8217;t &#8220;spoof&#8221; a pointer
+with an integer or some other bogus value. So, the general rule is
+that you can use a normal C union if you aren&#8217;t using pointers, but
+you must use a @tagged union if you are using pointers.</p>
+
+<h4>Datatypes</h4>
+
+<p>Cyclone provides another alternative to tagged unions for supporting
+hetrogenous values called a <em>datatype</em>. Tagged unions require space
+proportional to the largest member (plus room for the tag.) In
+contrast, a datatype only requires space for the member being
+used. However, datatypes cannot be updated with a different member and
+require a level of indirection.</p>
+
+<p>Here is our example type re-coded using a datatype declaration:</p>
+
+<pre><code>    datatype T {
+      Integer(int);
+      String(const char *@fat);
+    };
+
+    datatype T.Integer x = Integer(3);
+    datatype T.String y = String("hello, world");
+
+    void printT(datatype T@ a) {
+      switch (a) {
+      case &amp;Integer(i): printf("%d",i); return;
+      case &amp;String(s): printf("%s",s); return;
+      }
+    }
+</code></pre>
+
+<p>In general, a datatype declaration includes a set of <em>constructors</em>
+which can be used to build datatype values. In this case, the
+constructors are Integer and String. The Integer constructor takes an
+int and returns a value of type datatype T.Integer. The String
+constructor takes a string and returns a datatype T.String value.</p>
+
+<p>Note that the types of x and y are not the same so we can&#8217;t
+interchange them, nor can we pass them directly to the printT
+function. In particular, their types reveal which constructor was used
+to build them. However, we can manipulate pointers to these values in
+an abstract way. In particular, we can pass a pointer to a datatype
+T.Integer value or a pointer to a datatype T.String value anywhere
+that expects a datatype T. For instance, we can write printT(&amp;x) to
+print out the integer value in x, and we can write printT(&amp;y) to print
+out the &#8220;hello, world&#8221; string in y.</p>
+
+<p>We can use datatypes to implement a safe form of variable arguments
+(or <em>varargs</em>), as described in <a href='/wiki/Varargs'>Varargs</a>. More information on
+Cyclone unions is presented in <a href='/wiki/Tagged Unions and Datatypes'>Tagged Unions and Datatypes</a>.</p>
+
+<h3>C++, GCC and C99 Additions <a name="Additions"></a></h3>
+
+<p>C++, GCC and the <a href="http://web.onetelnet.ch/~twolf/tw/c/c9x_changes.html">ISO C99 standard</a> have some useful new features
+that we have adopted for Cyclone. From C++ we borrow the idea of
+<em>namespaces</em> for avoiding conflicts among library and program
+definitions. In short, if a function f is defined in a namespace Foo,
+then we would access the function by referring to Foo::f. The Cyclone
+standard libraries, such as Core or List
+are defined each in their own namespace. Cyclone also
+provides polymorphism similar to C++ templates.</p>
+
+<p>Some of the GCC and C99 features that we currently support are:</p>
+
+<ul>
+<li><p>Statement expressions: There is a new expression form, ({
+<em>statement</em> <em>expression</em> }). The statement is executed first, then
+the expression, and the value of the entire expression is the
+value of the expression</p></li>
+<li><p>Struct and Union expressions: If you&#8217;ve declared struct point{int
+x; int y;}; then you can write point{.x=<em>expression</em>,
+.y=<em>expression</em>} to allocate and initialize a struct point. The
+same sort of constructors may be used for unions, tagged or not,
+as we showed above.</p></li>
+<li><p>// comments as in Java or C++</p></li>
+<li><p>Declarations can appear in any statement position. It is not
+necessary to wrap braces around the declaration of a local
+variable.</p></li>
+<li><p>For-statements can include a declaration. For instance:</p>
+
+<p>  for (int x=0; x &lt; n; x++) {
+    &#8230;
+  }</p></li>
+</ul>
+
+<p>We have attempted to follow the C99 standard fairly closely.</p>
+
+<h3>Additional Features of Cyclone <a name="AdditionalFeaturesofCyclone"></a></h3>
+
+<p>So far we have focused on features common to both Cyclone and GCC
+extensions of C. In the remainder of this tutorial, we overview some
+of the new language features that have been added to Cyclone, inspired
+from other programming languages. These include (a) exceptions (as in
+ML and Java), (b) type inference for local variables (as in ML), (c)
+parametric polymorphism (as in ML and Generic Java), (d) structural
+subtyping, to approximate object-oriented features, and (e) abstract
+and existential types.</p>
+
+<p>In many cases, these features are useful for writing simpler
+code. Some features, like polymorphism and subtyping, are necessary to
+type-check or port a number of potentially-unsafe C idioms, usually
+involving &#8220;void *&#8221; or the like. We conclude the tutorial by
+enumerating some unsafe C idioms that are not supported in Cyclone.</p>
+
+<h3>Exceptions <a name="Exceptions"></a></h3>
+
+<p>So far we&#8217;ve glossed over what happens when you try to dereference a
+null pointer, or assign to an out-of-bounds @fat pointer. We&#8217;ve said
+that Cyclone inserts checks to make sure the operation is safe, but
+what if the checks fail? For safety, it would be sufficient to halt
+the program and print an error message&#8211;a big improvement over a core
+dump, or, worse, a program with corrupted data that keeps running.</p>
+
+<p>In fact, Cyclone does something a bit more general than halting with
+an error message: it throws an <em>exception</em>. The advantage of
+exceptions is that they can be <em>caught</em> by the programmer, who can
+then take corrective action and perhaps continue with the program. If
+the exception is not caught, the program halts and prints an error
+message. Consider our earlier example:</p>
+
+<pre><code>    FILE *f = fopen("/etc/passwd","r");
+    int c = getc((FILE *@notnull)f);
+</code></pre>
+
+<p>Suppose that there is no file /etc/passwd; then fopen will return
+NULL, and when f is cast to <code>FILE *@notnull</code>, the implied null check
+will fail. The program will halt with an error message,</p>
+
+<pre><code>    Uncaught exception Null_Exception
+</code></pre>
+
+<p>Null_Exception is one of a handful of standard exceptions used in
+Cyclone. Each exception is like a case of a datatype: it can carry
+along some values with it. For example, the standard exception
+Invalid_argument carries a string (which is a zero-terminated fat
+pointer). Exceptions can be handled in try-catch statements, using
+pattern matching:</p>
+
+<pre><code>    FILE *f = fopen("/etc/passwd","r");
+    int c;
+    try {
+      c = getc((FILE *@notnull)f);
+    }
+    catch {
+    case &amp;Null_Exception:
+      printf("Error: can't open /etc/passwd\n");
+      exit(1);
+    case &amp;Invalid_argument(s):
+      printf("Error: Invalid_argument(%s)\n",s);
+      exit(1);
+    }
+</code></pre>
+
+<p>Here we&#8217;ve &#8220;wrapped&#8221; the call to getc in a try-catch statement. If f
+isn&#8217;t NULL and the getc succeeds, then execution just continues,
+ignoring the catch. But if f is NULL, then the null check will fail
+and the exception Null<em>Exception will be thrown; execution immediately
+continues with the catch (the call to getc never happens). In the
+catch, the thrown exception is pattern-matched against the cases, in
+order. Since the thrown exception is Null</em>Exception, the first case is
+executed here.</p>
+
+<p>There is one important difference between an exception and a case of a
+datatype: with a datatype, all of the cases have to be declared at
+once, while a new exception can be declared at any time. So,
+exceptions are an <em>extensible</em> datatype. You can specify that a
+datatype is extensible when you declare it, using the @extensible
+qualifier. For example, here&#8217;s how to declare a new exception:</p>
+
+<pre><code>    @extensible datatype exn {
+      My_Exception(char *@fat);
+    };
+</code></pre>
+
+<p>The type @extensible datatype exn is the type of exceptions, and this
+declaration introduces a new case for the @extensible datatype exn
+type: My_Exception, which carries a single value (a string). Exception
+values are created just like datatype values, and are thrown with a
+throw statement. For example,</p>
+
+<pre><code>    throw new My_Exception("some kind of error");
+</code></pre>
+
+<p>or</p>
+
+<pre><code>    throw new Null_Exception;
+</code></pre>
+
+<p>In practice, &#8220;@extensible datatype&#8221; is quite a mouthful. So, Cyclone
+allows you abbreviate it with just datatype, as long as you&#8217;ve
+declared a datatype as @extensible once. So a more typical way to
+declare a new exception in Cyclone is</p>
+
+<pre><code>    datatype exn {
+      My_Exception(char ?);
+    };
+</code></pre>
+
+<h3>Let Declarations and Pattern Matching <a name="LetDeclarationsandPatternMatching"></a></h3>
+
+<p>Sometimes, it&#8217;s painful to declare a variable because you have to
+write down its type, and Cyclone types can be big when compared to
+their C counterparts since they may include bounds information,
+regions, <em>etc</em>. Therefore, Cyclone includes additional support for
+type inference using let declarations. In particular, you can write:</p>
+
+<pre><code>  int foo(int x) {
+    let y = x+3;
+    let z = 3.14159;
+    return (int)(y*z);
+  }
+</code></pre>
+
+<p>Here, we declared two variables y and z using &#8220;let.&#8221; When you use let,
+you don&#8217;t have to write down the type of the variable. Rather, the
+compiler infers the type from the expression that initializes the
+variable.</p>
+
+<p>More generally, you can write &#8220;let pattern = exp;&#8221; to destructure a
+value into a bunch of variables. For instance, if you pass a tuple to
+a function, then you can extract the components as follows:</p>
+
+<pre><code>  int sum($(int,int,int) args) {
+    let $(x,y,z) = args;
+    return (x+y+z);
+  }
+</code></pre>
+
+<p>This feature is called pattern matching, and is inspired from
+functional languages like ML and Haskell. Patterns can appear as part
+of let declarations, exception clauses (as we saw above), and switch
+statements. For example, we could rewrite the above code as follows
+using switch:</p>
+
+<pre><code>  int sum($(int,int,int) args) {
+    switch (args) {
+    case $(x,y,z):
+      return (x+y+z);
+    }
+  }
+</code></pre>
+
+<p>Notice there is no need for a default case, since args will always be
+a valid 3-tuple. On the other hand, if we were to pass a pointer to
+the tuple, rather than a tuple itself, we would have code as follows:</p>
+
+<pre><code>  int sum($(int,int,int) *argsp) {
+    switch (argsp) {
+    case &amp;$(x,y,z):
+      return (x+y+z);
+    default:
+      return 0;
+    }
+  }
+</code></pre>
+
+<p>The switch statement first handles the situation that the argument is
+a pointer to a tuple, designated by putting an &amp; in front of the tuple
+pattern. Recall that we did something similar when matching exceptions
+in catch clauses, above. The default case is for when argsp is
+NULL. Many more details about pattern matching are presented in
+<a href='/wiki/Pattern Matching'>Pattern Matching</a>.</p>
+
+<h3>Subtyping <a name="Subtyping"></a></h3>
+
+<p>Cyclone supports &#8220;extension on the right&#8221; and &#8220;covariant depth on
+const&#8221; subtyping for pointers. This simply means that you can cast a
+value x from having a type &#8220;pointer to a struct with 10 fields,&#8221; to
+&#8220;pointer to a struct having only the first 5 fields.&#8221; For example, if
+we have the following definitions:</p>
+
+<pre><code>  typedef struct Point {float x,y;} *point;
+
+  typedef struct CPoint {float x,y; int color;} *cpoint;
+
+  float xcoord(point p) {
+    return p-&gt;x;
+  }
+</code></pre>
+
+<p>then you can call xcoord with either a point or cpoint object. You can
+also cast a pointer to a tuple having 3 fields (e.g.,
+$(int,bool,double)*) to a pointer to a tuple having only 2 fields
+(e.g., $(int,bool)*). In other words, you can forget about the &#8220;tail&#8221;
+of the object. This allows a degree of polymorphism that is useful
+when porting C code. In addition, you can do &#8220;deep&#8221; casts on pointer
+fields that are const. (It is unsafe to allow deep casts on non-const
+fields.) Also, you can cast a field from being non-const to being
+const. You can also cast a constant-sized array to an equivalent
+pointer to a struct or tuple. In short, Cyclone attempts to allow you
+to cast one type to another as long as it is safe. Note, however, that
+these casts must be explicit.</p>
+
+<p>We expect to add more support for subtyping in the future (e.g.,
+subtyping on function pointers, bounded subtyping, etc.)</p>
+
+<h3>Polymorphic Functions <a name="PolymorphicFunctions"></a></h3>
+
+<p>Cyclone supports a fairly powerful form of <em>parametric
+polymorphism</em>. Those of you coming from ML or Haskell will find this
+familiar. Those of you coming from C++ will also find it somewhat
+familiar. The basic idea is that you can write one function that
+abstracts the types of some of the values it manipulates. For
+instance, consider the following two functions:</p>
+
+<pre><code>  $(char*,int) swap1($(int,char*) x) {
+     return $(x[1], x[0]);
+  }
+  $(int,int) swap2($(int,int) x) {
+     return $(x[1], x[0]);
+  }
+</code></pre>
+
+<p>The two functions are quite similar: They both take in a pair (i.e., a
+2-tuple) and return a pair with the components swapped. At the
+machine-level, the code for these two functions will be exactly the
+same, assuming that ints and <code>char *s</code> are represented the same way. So
+it seems silly to write the code twice. Normally, a C programmer would
+replace the definition with simply:</p>
+
+<pre><code>  $(void *,void *) swap1($(void *,void *) x) {
+     return $(x[1], x[0]);
+  }
+</code></pre>
+
+<p>(assuming you added tuples to C). But of course, this isn&#8217;t type-safe
+because once I cast the values to <code>void *</code>, then I can&#8217;t be sure what
+type I&#8217;m getting out. In Cyclone, you can instead write something like
+this:</p>
+
+<pre><code>  $(`b,`a) swap($(`a,`b) x) {
+     return $(x[1],x[0]);
+  }
+</code></pre>
+
+<p>The code is the same, but it abstracts what the types are. The types
+<code>`a</code> and <code>`b</code> are type variables that can be instantiated with
+any word-sized, general-purpose register type. So, for instance, you
+can call swap on pairs of integers, pairs of pointers, pairs of an
+integer and a pointer, etc.:</p>
+
+<pre><code>  let $(x,y) = swap($("hello",3));  // x is 3, y is hello
+  let $(w,z) = swap($(4,3));        // w is 3, z is 4
+</code></pre>
+
+<p>Note that when calling a polymorphic function, you need not tell it
+what types you&#8217;re using to instantiate the type variables. Rather,
+Cyclone figures this out through unification.</p>
+
+<p>C++ supports similar functionality with templates. However, C++ and
+Cyclone differ considerably in their implementation strategies. First,
+Cyclone only produces one copy of the code, whereas a C++ template is
+specialized and duplicated at each type that it is used. This approach
+requires that you include definitions of templates in interfaces and
+thus defeats separate compilation. However, the approach used by
+Cyclone does have its drawbacks: in particular, the only types that
+can instantiate type variables are those that can be treated
+uniformly. This ensures that we can use the same code for different
+types. The general rule is that values of the types that instantiate a
+type variable must fit into a machine word and must be passed in
+general-purpose (as opposed to floating-point) registers. Examples of
+such types include int, pointers, datatype, and xdatatype types. Other
+types, including char, short, long long, float, double, struct, and
+tuple types violate this rule and thus values of these types cannot be
+passed to a function like swap in place of the type variables. In
+practice, this means that you tend to manipulate a lot of pointers in
+Cyclone code.</p>
+
+<p>The combination of parametric polymorphism and sub-typing means that
+you can cover a lot of C idioms where <code>void*</code> or unsafe casts were
+used without sacrificing type-safety. We use polymorphism a lot when
+coding in Cyclone. For instance, the standard library includes many
+container abstractions (lists, sets, queues, etc.) that are all
+polymorphic in the element type. This allows us to re-use a lot of
+code. In addition, unlike C++, those libraries can be compiled once
+and need not be specialized. On the downside, this style of
+polymorphism does not allow you to do any type-specific things (e.g.,
+overloading or ad-hoc polymorphism.) Someday, we may add support for
+this, but in the short run, we&#8217;re happy not to have it.</p>
+
+<h3>Polymorphic Data Structures <a name="PolymorphicDataStructures"></a></h3>
+
+<p>Just as function definitions can be parameterized by types, so can
+struct definitions, datatype definitions, and even typedefs. For
+instance, the following struct definition is similar to the one used
+in the standard library for lists:</p>
+
+<pre><code>  struct List&lt;`a&gt; {`a hd; struct List&lt;`a&gt; * tl; };
+  typedef struct List&lt;`a&gt; *list_t&lt;`a&gt;;
+</code></pre>
+
+<p>Here, we&#8217;ve declared a struct List parameterized by a type <code>`a</code>. The hd
+field contains an element of type <code>`a</code> and the tl field contains a
+possibly-null pointer to a struct List with elements of type <code>`a</code>. We
+then define <code>list_t&lt;`a&gt;</code> as an abbreviation for struct <code>List&lt;`a&gt;*</code>. So,
+for instance, we can declare both integer and string lists like this:</p>
+
+<pre><code>  list_t&lt;int&gt; ilist = new List{1,new List{2,null}};
+  list_t&lt;string_t&gt; slist = new List{.hd = "foo",
+                                  .tl = new List{"bar",null}};
+</code></pre>
+
+<p>Note that we use &#8220;new&#8221; as in C++ to allocate a new struct List on the
+heap and return a pointer to the resulting (initialized) List
+object. Note also that the field designator (&#8220;.hd&#8221;, &#8220;.tl&#8221;) are
+optional.</p>
+
+<p>Once you have polymorphic data structures, you can write lots of
+useful polymorphic code and use it over and over again. For instance,
+the standard list library (see lib/list.h) includes functions for
+mapping over a list, looking up items in a list, concatenating two
+lists, copying lists, sorting lists, etc.</p>
+
+<h3>Abstract and Existential Types <a name="Abstract"></a></h3>
+
+<p>Suppose you want to declare an abstract type for implementing
+stacks. In Cyclone, the way this is accomplished is by declaring a
+struct that encapsulates the implementation type, and by adding the
+&#8220;abstract&#8221; qualifier to the struct definition. For instance, if we
+write:</p>
+
+<pre><code>  abstract struct Queue&lt;`a&gt; { list_t&lt;`a&gt; front, rear; };
+</code></pre>
+
+<p>then this declares a polymorphic Queue implementation that is
+abstract. The definition of the struct is available within the unit
+that declares the Queue, but will not be made available to the outside
+world. (This will be enforced by a link-time type-checker that we are
+currently putting together.) Typically, the provider of the Queue
+abstraction would write in an interface file:</p>
+
+<pre><code>  extern struct Queue&lt;`a&gt;;
+</code></pre>
+
+<p>The abstract keyword in the implementation ensures that the definition
+does not leak to a client.</p>
+
+<p>A typedef can be made abstract by writing:</p>
+
+<pre><code>typedef _ foo_t;
+</code></pre>
+
+<p>However, our current implementation does not support later redefining
+foo_t as a non-abstract typedef. The default kind for the type is B;
+you can write an explicit kind like this:</p>
+
+<pre><code>typedef _::A bar_t;
+</code></pre>
+
+<p>Generally abstract structs are sufficient. An abstract typedef is
+useful in some cases, though, such as when the abstracted type is
+actually int.</p>
+
+<p>It&#8217;s also possible to code up &#8220;first-class&#8221; abstract data types using
+structs with <em>existentially quantified type variables</em>. Existential
+types are described in <a href='/wiki/User%20Manual#AdvancedFeatures'>Advanced Features</a>.</p>
+
+<p>For an example of the use of existential types, see the fn.h and
+fn.cyc files in the standard library, which implement first-class
+closures.</p>
+
+<h3>Restrictions <a name="Restrictions"></a></h3>
+
+<p>Though Cyclone adds many new features to C, there are also a number of
+restrictions that it must enforce to ensure code does not crash. Here
+is a list of the major restrictions:</p>
+
+<ul>
+<li><p>Cyclone enforces the evaluation order of subexpressions in
+contexts in which C is agnostic. For example, consider the
+following expression</p>
+
+<p>  f(x=0,x=1);</p></li>
+</ul>
+
+<p>In C, the resulting value of x could either be 1 or 0, depending on
+the compiler; the language makes no restriction on the order that
+argument expressions should be evaluated. This allows the compiler
+more freedom in generating optimized code. However, it often makes
+programs harder to reason about, and they can break in subtle ways
+when ported to different platforms. It also can foil forms of static
+analysis aimed at improving performance, such array-bounds- or
+null-check elimination.</p>
+
+<p>For Cyclone, we implement the following policy:</p>
+
+<ul>
+<li><p>Cyclone follows C for all those places it has a requirement,
+e.g., for comma-separated expression lists.</p></li>
+<li><p>Cyclone enforces the evaluation order to be right-to-left for
+assignment expressions. For example:</p>
+
+<pre><code>e1 = e2 = e3;
+</code></pre>
+
+<p>In this expression, Cyclone evaluates first e3, then e2, then e1.</p></li>
+<li><p>In all contexts, Cyclone&#8217;s evaluation order is left-to-right,
+e.g., for arguments passed to a function, and subexpressions in
+an arithmetic expression.</p></li>
+<li><p>Cyclone does not permit some of the casts that are allowed in C
+because incorrect casts can lead to crashes, and it is not always
+possible for us to determine what is safe. In general, you should
+be able to cast something from one type to another as long as the
+underlying representations are compatible. Note that Cyclone is
+very conservative about &#8220;compatible&#8221; because it does not know the
+size or alignment constraints of your C compiler.</p></li>
+<li><p>Cyclone does not support pointer arithmetic on thin pointers
+unless they are zero-terminated and even then, there are checks to
+make sure you can&#8217;t go past a zero. Pointer arithmetic is not
+unsafe in itself, but it can lead to unsafe code when the
+resulting pointer is assigned or dereferenced. You can cast the
+thin pointer value to a @fat value and then do the pointer
+arithmetic instead.</p></li>
+<li><p>Cyclone inserts a NULL check when a possibly-NULL pointer is
+dereferenced and it cannot determine statically that the pointer
+is not NULL.</p></li>
+<li><p>If a function&#8217;s return type is not &#8220;bits-only&#8221; (i.e., contains
+pointers), Cyclone requires that the function executes a return
+statement, throws an exception, or calls a noreturn function on
+every possible execution path. This is needed to ensure that the
+value returned from the function has the right type, and is not
+just a random value left in a register or on the stack.</p></li>
+<li><p>Untagged unions in Cyclone can hold arbitrary values, but you can
+only read out &#8220;bits.&#8221; In particular, the members you can read out
+can only have combinations of chars, ints, shorts, longs, floats,
+doubles, structs of bits, or tuples of bits. Pointer types are not
+supported. This avoids the situation where an arbitrary bit
+pattern is cast to a pointer and then dereferenced. If you want to
+use multiple types, then use @tagged unions or datatypes.</p></li>
+<li><p>Cyclone only supports limited forms of malloc (and calloc). You
+must write <code>malloc(sizeof(t)*n)</code> and t must be a &#8220;bits-only&#8221;
+type. You can use calloc to allocate arrays of (possibly NULL)
+pointers (e.g., <code>calloc(sizeof(char*),34)</code>).</p></li>
+<li><p>Cyclone performs a static analysis to ensure that every
+non-numeric (i.e., pointer) variable and struct field is
+initialized before it is used. This prevents a random stack value
+from being used improperly. The analysis is somewhat conservative
+so you may need to initialize things earlier than you would do in
+C. There is only limited support for initializing memory in a
+procedure separate from the one that does the allocation.</p></li>
+<li><p>Cyclone does not permit gotos from one scope into another. C warns
+against this practice, as it can cause crashes; Cyclone rules it
+out entirely.</p></li>
+<li><p>Cyclone places some limitations on the form of switch statements
+that rule out crashes like those caused by unrestricted
+goto. Furthermore, Cyclone prevents you from accidentally falling
+through from one case to another. To fall through, you must
+explicitly use the fallthru keyword. Otherwise, you must
+explicitly break, goto, continue, return, or throw an
+exception. However, adjacent cases for a switch statement (with no
+intervening statement) do not require an explicit fallthru.</p></li>
+<li><p>Cyclone has some new keywords (beyond those of C99 and GCC) that
+can no longer be used as identifiers. The list includes: abstract,
+calloc, datatype, <code>dynregion_t</code>, export, fallthru, <code>__gen</code>, let,
+malloc, namespace, numelts, <code>__cyclone_port_on__</code>,
+<code>__cyclone_port_off__</code>, region, regions, reset_region, rmalloc,
+rnew, tagcheck, <code>tag_t</code>, throw, try, using, valueof, and <code>valueof_t</code>.</p></li>
+<li><p>Cyclone prevents you from using pointers to stack-allocated
+objects as freely as in C to avoid security holes. The reason is
+that each declaration block is placed in a conceptual &#8220;region&#8221; and
+the type system tracks the region into which a pointer points.</p></li>
+<li><p>Cyclone does not allow you to explicitly free a heap-allocated
+object. Instead, you can either use the region mechanism or rely
+upon the conservative garbage collector to reclaim the space.</p></li>
+</ul>
+
+<p>In addition, there are a number of shortcomings of the current
+implementation that we hope to correct. For instance:</p>
+
+<ul>
+<li><p>Cyclone currently does not support nested type declarations within
+a function. All struct, union, enum, datatype, and typedef
+definitions must be at the top-level.</p></li>
+<li><p>Cyclone does not allow a typedef declaration to be shadowed by
+another declaration.</p></li>
+</ul>
+</div>
+</body>
+</html>

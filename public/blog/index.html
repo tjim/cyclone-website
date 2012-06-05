@@ -1,0 +1,448 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Blog</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>GCC 4</h2>
+
+<p>Thanks to Greg, Cyclone now works with GCC 4.</p>
+
+<p>You&#8217;ll need to use the latest Cyclone from SVN;
+instructions are at <a href='/wiki/Download'>Download</a>.</p>
+<p align=right><i>20 June 2006 by trevor <a href="/blog/trevor/GCC%204-20060621015930/">#</a></i></p>
+<h2>Minix</h2>
+
+<p>Attention: Cyclone (latest SVN) runs out of the box on <a href="http://www.minix3.org/">Minix</a>!</p>
+
+<p>That is all.</p>
+<p align=right><i> 5 June 2006 by trevor <a href="/blog/trevor/Minix-20060605211925/">#</a></i></p>
+<h2>Cross-compiling for the Nokia 770</h2>
+
+<p>The Nokia 770 has limited processing power: a 220MHz ARM-based CPU,
+64MB RAM, and 128MB of non-volative storage (flash).  Using the
+Cyclone compiler on such a limited system would be painful, maybe
+impossible.  Instead we&#8217;ll use a special Cyclone compiler on a more
+powerful machine, and compile the programs there before transferring
+them to the 770 to run.  The process is about the same regardless of
+whether you want to compile for the 770, the Nintendo DS, the iPod, or
+even more limited platforms.</p>
+
+<p>The hardest part of this is getting a cross-compiling gcc.
+Fortunately, Nokia is using standard open source tools for their
+development environment, and binary distributions and good
+documentation are easily available.</p>
+
+<h3>Installing the cross-compiler</h3>
+
+<p>The basic development environment is <a href="http://scratchbox.org/">Scratchbox</a>.  Scratchbox is a
+set of cross-compilers and emulators that let you simulate working on
+one processor architecture, while in fact running on a completely
+different architecture.  In our case, we&#8217;ll be able to compile and
+execute ARM code while running on an x86 machine.</p>
+
+<p>You can install Scratchbox and Maemo (the Nokia-specific devkit) using
+<a href="http://www.scratchbox.org/wiki/Sbox102Maemo">these instructions</a>.  Due to our particular needs, we&#8217;ll use a
+different set of packages than those mentioned in those instructions.
+Here&#8217;s the complete list of tarballs that I used:</p>
+
+<pre><code>scratchbox-core-1.0.4-i386.tar.gz
+scratchbox-libs-1.0.3-i386.tar.gz
+scratchbox-toolchain-arm-gcc3.4-glibc2.3-1.0.2-i386.tar.gz
+scratchbox-toolchain-host-gcc-1.0.5-i386.tar.gz
+</code></pre>
+
+<p>The tarballs are available <a href="http://www.scratchbox.org/download/files/sbox-releases/1.0/tarball/">here</a>.  I didn&#8217;t bother to install any
+Scratchbox devkits, or the Maemo SDK, as these aren&#8217;t necessary to
+cross compile simple command-line applications.</p>
+
+<p>After following the instructions you should have a working Scratchbox
+with ARM target.  This means that when you are logged in to the
+Scratchbox in the ARM target, you are running ARM binaries via
+emulation.  We also need a HOST target, where you can run
+x86 binaries natively.  The setup for HOST is about the same as for ARM:</p>
+
+<blockquote>
+  <p>Using sb-menu, choose &#8220;Setup&#8221; to create the HOST target.</p>
+  
+  <ol>
+  <li>Name the target HOST</li>
+  <li>Select host-gcc compiler</li>
+  <li>Select debian and perl devkits</li>
+  <li>Select &#8220;none&#8221; for CPU transparency method</li>
+  <li>Select &#8220;no&#8221; for installing files</li>
+  <li>Select &#8220;yes&#8221; for selecting the target</li>
+  <li>Exit sb-menu.</li>
+  </ol>
+</blockquote>
+
+<p>You should now be running inside the HOST target in Scratchbox.</p>
+
+<h3>Installing Cyclone</h3>
+
+<p>Now, on to Cyclone.  <a href="/wiki/Download">Download the distribution; you&#8217;ll need to use
+the SVN version to be sure it works with Maemo.</a>
+Place the distribution in your Scratchbox home directory and cd to the
+toplevel directory.  Configure and build:</p>
+
+<pre><code>./configure --target=arm-maemo-elf
+make
+make install
+</code></pre>
+
+<p>Now, create the canonical first program:</p>
+
+<pre><code>cat &gt; hello.cyc &lt;&lt;ZZZ
+#include &lt;stdio.h&gt;
+int main () { printf("Hello, world!\n"); return 0; }
+ZZZ
+</code></pre>
+
+<p>Compile it with</p>
+
+<pre><code>cyclone hello.cyc -nogc -b arm-maemo-elf
+</code></pre>
+
+<p>Transfer the resulting a.out to your 770.  On most Linux systems you
+can simply plug in the 770 over USB and drag the file over; this will
+put the program on the memory card.  <strong>Be sure to move the program off
+of the memory card to your home directory</strong>, because it won&#8217;t run from
+the memory card.</p>
+
+<p>Finally, run it from an xterm:</p>
+
+<p><img src="/files/770-hello.jpg" alt="Hello world on a 770" /></p>
+
+<h3>Under the covers</h3>
+
+<p>A couple of details.  When you did</p>
+
+<pre><code>./configure --target=arm-maemo-elf
+</code></pre>
+
+<p>you set Cyclone up so that both a native (x86) compiler and a cross
+(ARM) compiler would be built.  Because Cyclone uses gcc and
+associated tools as its back end, the difference between the two is
+just that the ARM version invokes a cross gcc toolchain instead of the
+native toolchain.  If you examine the generated Makefile.inc, you&#8217;ll
+see these lines:</p>
+
+<pre><code>TARGET_CC=/scratchbox/compilers/arm-linux-gcc3.4.cs-glibc2.3/bin/arm-linux-gcc
+TARGET_CFLAGS=
+TARGET_RANLIB=/scratchbox/compilers/arm-linux-gcc3.4.cs-glibc2.3/bin/arm-linux-ranlib
+TARGET_AR=/scratchbox/compilers/arm-linux-gcc3.4.cs-glibc2.3/bin/arm-linux-ar
+</code></pre>
+
+<p>If you are cross-compiling for a different architecture, or you have
+gotten a different version of the Scratchbox toolchains, you will need
+to adjust these variables.</p>
+
+<p>A second detail: note that when we compiled hello.cyc, we used the
+-nogc flag.  This means that the garbage collector will not be linked
+in.  In fact, the normal build process will not cross-compile the
+garbage collector at all, so the compile will fail if you do not use
+-nogc.</p>
+
+<p>It is possible to cross-compile the garbage collector, but I don&#8217;t
+have much experience with it.  If you are using Scratchbox, then you
+can compile the garbage collector in the ARM target, and hello.cyc
+will run on the 770 with the garbage collector linked in.  It does not
+run in the ARM target itself, though.</p>
+
+<p>To cross-compile the garbage collector in the ARM target, do this:</p>
+
+<pre><code>cd gc
+./configure --enable-threads=no --enable-shared=no --enable-cplusplus=no
+make
+mv .libs/libgc.a /usr/local/lib/cyclone/cyc-lib/arm-maemo-elf/gc.a
+</code></pre>
+
+<p>Now you should be able to compile programs to use the garbage
+collector as usual, by leaving off the -nogc flag.</p>
+<p align=right><i>15 May 2006 by trevor <a href="/blog/trevor/Cross-compiling%20for%20the%20Nokia%20770-20060516032902/">#</a></i></p>
+<h2>Write once run anywhere</h2>
+
+<p>Shocking news: <a href="http://www.infoworld.com/article/06/05/15/78287_HNjaveclipsemotorola_1.html">write once run anywhere is a mirage</a>.</p>
+
+<blockquote>
+  <p>&#8230; Motorola is seeking development of a broader mobile and software
+  ecosystem for Java, with the goal of yielding &#8220;write-once, run
+  everywhere&#8221; implementation capabilities.</p>
+  
+  <p>&#8230; Currently, a handset maker licenses a JSR from another company
+  and then makes changes to the reference implementation to make it
+  work on their phone. This is done over and over again, resulting in
+  platform variations, according to Motorola.</p>
+</blockquote>
+
+<p>Or, as <a href="http://www.armadilloaerospace.com/n.x/johnc/recent%20updates/archive?news_id=295">Carmack said last year</a>,</p>
+
+<blockquote>
+  <p>Write-once-run-anywhere. Ha. Hahahahaha. We are only testing on four
+  platforms right now, and not a single pair has the exact same
+  quirks. All the commercial games are tweaked and compiled
+  individually for each (often 100+) platform.</p>
+</blockquote>
+
+<p>Anyway, let&#8217;s be honest: &#8220;write once run anywhere&#8221; should more
+accurately be, &#8220;write once run anywhere that C already runs, taking
+care of any portability issues.&#8221;  It&#8217;s a nice goal, but the
+portability problem at the core has not gone away.  We still need a
+technology to solve the portability problem, securely and reliably,
+and Java does not address this at all.</p>
+<p align=right><i>15 May 2006 by trevor <a href="/blog/trevor/Write%20once%20run%20anywhere-20060515202000/">#</a></i></p>
+<h2>Nokia 770</h2>
+
+<p>Since the release of Cyclone 1.0 last week, we&#8217;ve heard from a number
+of people interested in using Cyclone to program embedded systems.
+It&#8217;s actually pretty easy to set up, so I thought I&#8217;d make a couple of
+posts to document my experiences in cross-compiling programs for the
+Nokia 770 Internet Tablet.  Here&#8217;s the first.</p>
+
+<p>For those not familiar with the Nokia 770, it&#8217;s a computer with a
+four-inch touchscreen, Bluetooth, and wifi.  It&#8217;s very handy to keep
+around in case you need to browse the web for a moment, to look up a
+fact or news story, or just to pass the time.</p>
+
+<p><img src="/files/770-cyclone.jpg" alt="The Nokia 770" /></p>
+
+<p>A surprising number of people think the 770 is a flop; the Washington
+Post says <a href="http://www.washingtonpost.com/wp-dyn/content/article/2006/04/15/AR2006041500125.html">&#8220;It Does Very Little, and Not Very Well,&#8221;</a> and CNET puts
+it on the list of the <a href="http://news.com.com/2300-1041_3-6056647-9.html">&#8220;Worst tech of 2006 (so far).&#8221;</a> My judgment
+is the opposite: I&#8217;ve had a 770 since December and I still use it
+every day, quite a contrast with the pile of old Palms and Pocket PCs
+gathering dust in my closet.</p>
+
+<p>The 770 has two killer features.  First, the screen is beautiful:
+800x480 resolution in 4 diagonal inches, or about 225 dpi.  That&#8217;s
+about 4 times sharper than a standard laptop screen, and a width of
+800 pixels means that most web sites can be viewed without horizontal
+scrolling.  Once you experience browsing on the 770, you won&#8217;t bother
+with a smartphone or low-res Palm or Pocket PC again.</p>
+
+<p>Second, Nokia is using an open source development model.  The 770 runs
+Linux (a 2.6 kernel), the GUI is based on GTK, the compiler is gcc,
+the development environment is scratchbox, and all of the tools and
+documentation can be downloaded freely, without registration.  I&#8217;ve
+gotten Cyclone compiling for the Nintendo DS and the iPod, but
+developing for those platforms isn&#8217;t much fun, because you have to
+work so hard to get basics like networking going.  Consequently, Nokia
+has attracted many more developers and software ports than these other
+platforms, even though they were released months or years ahead of the
+770.</p>
+
+<p>In my next post, I&#8217;ll give the details on setting up Cyclone to
+compile for the 770.</p>
+<p align=right><i>14 May 2006 by trevor <a href="/blog/trevor/Nokia%20770-20060514182910/">#</a></i></p>
+<h2>Signal handling bug in Sendmail</h2>
+
+<p><a href="http://xforce.iss.net/xforce/alerts/id/216">Here&#8217;s an interesting vulnerability</a>:</p>
+
+<blockquote>
+  <p>Sendmail contains a signal race vulnerability when receiving and
+  processing mail data from remote clients. Sendmail utilizes a signal
+  handler for dealing with timeouts that is not async-safe and
+  interruption of certain functions by this signal handler will cause
+  static data elements to be left in an inconsistent state. These data
+  elements can be used to write data to invalid parts of the stack (or
+  heap in some scenarios), thus taking control of the vulnerable
+  process.</p>
+</blockquote>
+
+<p>It&#8217;s a good reminder that signal handling turns any program into a
+multithreaded program.</p>
+<p align=right><i>14 May 2006 by trevor <a href="/blog/trevor/Signal%20handling%20bug%20in%20Sendmail-20060514180237/">#</a></i></p>
+<h2>Garbage collection for Cocoa</h2>
+
+<p><a href="http://arstechnica.com/staff/fatbits.ars/2006/5/6/3868">Ars Technica discusses the possibilities for Apple using garbage
+collection for Cocoa, their Objective-C development libraries</a>.</p>
+
+<p>Of course, it&#8217;s been possible to use garbage collection with
+Objective-C for a long time, using the Boehm-Demers-Weiser garbage
+collector that we use in Cyclone.  The real question is whether Apple
+will use garbage collection to replace reference counting in their own
+applications.  Ars Technica points out signs that garbage collection
+will at least be officially supported in the next version of the
+operating system, 10.5 (Leopard).</p>
+<p align=right><i> 7 May 2006 by trevor <a href="/blog/trevor/Garbage%20collection%20for%20Cocoa-20060507223549/">#</a></i></p>
+<h2>OLPC</h2>
+
+<p>The <a href="http://laptop.org/">One Laptop Per Child</a> (OLPC) project has some interesting
+constraints.  The plan is to distribute millions of laptops to the
+developing world, where power and connectivity will be intermittent.
+The laptops themselves will have to be inexpensive, so they will have
+limited CPU, RAM, and storage (flash only, no disk drive), much less
+than what you typically find on a laptop in the US.</p>
+
+<p>This would be a nice platform for Cyclone: besides being
+resource-constrained, OLPC will need robust software, since it will be
+difficult to update.  Cyclone&#8217;s safety combined with ability to
+control the memory footprint would be a win on both counts.</p>
+
+<p>After considering Java (and rejecting it in part because it is not an
+open platform), the project has settled on Python as the basic
+development platform.  Python has a reputation for speed, but it would
+be interesting to see how it compares to Cyclone in speed and memory
+footprint.  On the small benchmarks of <a href="http://shootout.alioth.debian.org/">The Computer Language
+Shootout</a>, C (compiled with gcc) seems to be something like 15
+times faster and less memory hungry than Python.  Assuming that
+Cyclone (without garbage collection) is close to C, there is still a
+good case to be made for Cyclone.</p>
+
+<h3>Further reading</h3>
+
+<p><a href="http://wiki.laptop.org/wiki/Main_Page">There&#8217;s a wiki</a>.</p>
+
+<p><a href="http://www.gettysfamily.org/wordpress/">Jim Gettys has a blog</a> discussing technical issues like the
+hardware, system administration, and localization on a large scale.</p>
+
+<p>Nicholas Negroponte is the chairman of the project and <a href="http://news.com.com/Negroponte+Slimmer+Linux+needed+for+100+laptop/2100-7346_3-6057456.html">gave a
+speech</a> earlier this month calling for smaller, faster, thinner
+Linux distributions, and giving the latest description of the
+hardware.</p>
+
+<p>The distribution will be based on Fedora, which has an <a href="http://fedoraproject.org/wiki/OLPC">OLPC page</a>.</p>
+<p align=right><i> 2 May 2006 by trevor <a href="/blog/trevor/OLPC-20060502042858/">#</a></i></p>
+<h2>Safety</h2>
+
+<p>It&#8217;s usually a good idea to avoid programming language flames, but
+<a href="http://www.journalhome.com/codecraft/9003/">this one from last year</a> is a bit amusing.  It defines &#8220;freedom
+languages&#8221; (Ruby, Python, Perl, Smalltalk) and &#8220;safety languages&#8221;
+(C++, Java, C#, VB, Delphi, Haskell, Nice).  At the end of the piece
+the author treats us to this astonishing revelation:</p>
+
+<blockquote>
+  <p>All other things being equal, I think I&#8217;ll choose freedom</p>
+</blockquote>
+
+<p>Furthermore, &#8220;freedom&#8221; = boxers, &#8220;safety&#8221; = tighty whities (ok, not
+really).</p>
+
+<p>The useful bit of information is that the author includes C++ on his
+list of &#8220;safety&#8221; languages.  This points up a bit of a problem for
+Cyclone: there&#8217;s no accepted definition of &#8220;safety,&#8221; and, in fact,
+people use the word to describe unsafe languages.</p>
+
+<p>I don&#8217;t think there&#8217;s a good fix for this; if I recall, Matthias
+Felleisen took a stab at a general definition of language safety, but
+I don&#8217;t know that it went anywhere, and I&#8217;m not aware of other work on
+the topic.  And in the end, the general public will use the word as
+they want to, not the way we want them to.</p>
+
+<p>I think that the best we can do is try to give examples of what we
+consider safe and unsafe.  We should build a wiki page to collect this
+information.  In the meantime, here&#8217;s one (perhaps) surprising
+example:</p>
+
+<h3>Q: if a program segfaults, is it safe?</h3>
+
+<p>My answer is, <strong>yes</strong>, that may be safe.</p>
+
+<p>For example, imagine that you could magically transform every C
+program in the world so that in case of a buffer overflow, the program
+would immediately segfault.  This would be great!  It would mean that
+instead of being corrupted, programs would halt immediately if they
+were attacked.  In other words, the system would have a <em>fail-stop</em>
+property.</p>
+
+<p>Fail-stop would mean the difference between a corrupted, &#8220;zombie&#8221;
+program under the remote control of some attacker, and a dead program.
+Not ideal, but a great improvement.  In fact, fail-stop is a crucial
+ingredient of one definition of safety.</p>
+
+<p>The same argument can be applied in other cases.  For example, there
+is no safety reason to check for NULL pointers, because a NULL pointer
+dereference on modern machines will cause a segfault.  There may be
+other reasons (recovery from errors), but it isn&#8217;t a safety issue.</p>
+<p align=right><i>24 April 2006 by trevor <a href="/blog/trevor/Safety-20060425015248/">#</a></i></p>
+<h2>Language popularity</h2>
+
+<p>Tim O&#8217;Reilly posts statistics on the technical book market.  <a href="http://radar.oreilly.com/archives/2006/04/state_of_the_computer_book_mar_3.html">This
+installment</a> contains the interesting prediction that C# will
+replace Java as the most popular language shortly, and may have done
+so already:</p>
+
+<blockquote>
+  <p>Microsoft languages (VB and C#) are both showing strong growth, while
+  Java is weakening, continuing a years-long trend.</p>
+</blockquote>
+
+<p>Also:</p>
+
+<blockquote>
+  <p>&#8220;.Net languages&#8221; refers to books that cover both C# and VB in the
+  same book. If you give C# credit for all the books in this group, C#
+  now just edges out Java as the most popular computer programming
+  language. And if current growth trends continue, with Java off 6%
+  and C# up 68%, C# will significantly extend its lead next quarter.</p>
+</blockquote>
+<p align=right><i>22 April 2006 by trevor <a href="/blog/trevor/Language%20popularity-20060423031813/">#</a></i></p>
+<h2>Firefox security holes</h2>
+
+<p>There&#8217;s a new version of Firefox out (1.5.0.2), with fixes for 22
+security issues, <a href="http://secunia.com/advisories/19631/">according to Secunia</a>.  My favorite is this one:</p>
+
+<blockquote>
+  <p>2) An error in the garbage collection in the JavaScript engine can be
+     exploited to cause a memory corruption.</p>
+  
+  <p>   Successful exploitation may allow execution of arbitrary code.</p>
+</blockquote>
+
+<p>Apparently garbage collectors are not perfect!  Who knew.</p>
+
+<p>Among the 22 issues there are a bunch that would clearly be prevented
+by a safe language like Cyclone:</p>
+
+<blockquote>
+  <p>3) A boundary error in the CSS border rendering implementation may be
+     exploited to write past the end of an array.</p>
+  
+  <p>4) An integer overflow in the handling of overly long regular
+     expressions in JavaScript may be exploited to execute arbitrary
+     JavaScript bytecode.</p>
+  
+  <p>6) An error in the &#8220;InstallTrigger.install()&#8221; method can be exploited
+     to cause a memory corruption.</p>
+  
+  <p>13) An error in the processing of a certain sequence of HTML tags can
+      be exploited to cause a memory corruption.</p>
+  
+  <p>Successful exploitation allows execution of arbitrary code.</p>
+  
+  <p>15) Some errors in the DHTML implementation can be exploited to cause
+      a memory corruption.</p>
+  
+  <p>Successful exploitation may allow execution of arbitrary code.</p>
+  
+  <p>16) An integer overflow error in the processing of the CSS
+      letter-spacing property can be exploited to cause a heap-based
+      buffer overflow.</p>
+  
+  <p>Successful exploitation allows execution of arbitrary code.</p>
+</blockquote>
+
+<p>Some of the others might be safety issues as well, but it takes quite
+a bit of digging to figure these things out.</p>
+<p align=right><i>14 April 2006 by trevor <a href="/blog/trevor/Firefox%20security%20holes-20060414171506/">#</a></i></p>
+<h1 align='center'><a href='/blogarchive'>ARCHIVES</a></h1>
+</div>
+</body>
+</html>

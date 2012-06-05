@@ -1,0 +1,120 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Pointers</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Pointers</h2>
+
+<p>As in C, one should think of Cyclone pointers as just
+addresses. Operations on pointers, such as *x, x->f, and x[e], behave
+the same as in C, with the exception that run-time checks sometimes
+precede memory accesses. (Exactly when and where these checks occur is
+described below.) However, Cyclone prevents memory errors such as
+dereferencing dangling pointers or indexing outside an array&#8217;s bounds,
+so it may reject some operations on pointers that C would accept.</p>
+
+<p>In order to enforce memory safety and distinguish between different
+uses of pointers, Cyclone pointer types include additional qualifiers
+when compared to their C counterparts. These qualifiers are described
+briefly below and in more detail throughout this section:</p>
+
+<ul>
+<li><p>@nullable: Pointers with this qualifier may be NULL. This
+qualifier is present by default and overridden by the @notnull
+qualifier. A dereference of a @nullable pointer will generally be
+preceded by a NULL-check.</p></li>
+<li><p>@notnull: Pointers with this qualifier may never be NULL, and thus
+never need to be checked for NULL upon dereference. This qualifier
+is not present by default and must be put in explicitly. The
+qualifier may be abbreviated by using &#8220;@&#8221; in place of the usual
+pointer &#8220;*&#8221;. So, for instance, the type &#8220;int *@notnull&#8221; can be
+abbreviated by &#8220;int @&#8221;. Currently, the @notnull qualifier cannot
+be used on pointers with the @fat qualifier.</p></li>
+<li><p>@thin: Pointers with this qualifier have the same representation
+as in C (i.e., a single machine word.) However, arithmetic on thin
+pointers is not supported except when the pointer is also
+qualified as @zeroterm (see below). This qualifier is present by
+default and overridden by the @fat qualifier.</p></li>
+<li><p>@fat: Pointers with this qualifier consist of a thin pointer plus
+additional information needed to support safe pointer arithmetic
+and dereferencing. (The current implementation uses three words in
+total.) Each dereference of a fat pointer incurs both a NULL-check
+and a bounds check to ensure that the pointer points to a valid
+object. The @fat qualifier cannot be used with the @notnull or
+@numelts qualifiers (though we expect to change this in the
+future.) The numelts operation may be applied to fat pointers to
+determine the number of elements in the (forward) sequence that
+may be safely dereferenced. Finally, the qualifier may be
+abbreviated by using &#8220;?&#8221; in place of the usual pointer &#8220;*&#8221;. So,
+for instance, the type &#8220;int *@fat&#8221; can be abbreviated by &#8220;int ?&#8221;.</p></li>
+<li><p>@numelts(e): The term e must be a <em>static</em> expression (i.e., a
+constant expression or one involving valueof) and indicates an
+upper bound on the number of objects that that the pointer refers
+to. For example, if p has type T *@numelts(42), then either p is
+NULL or else for 0 &lt;= i &lt; e, the expression p[i] is guaranteed to
+contain a T object. This qualifier may not be used in conjunction
+with @fat. If omitted on a @thin pointer, then @numelts(1) is
+inserted by default. This qualifier can be abbreviated by writing
+the bounds expression e in curly braces. For instance, the type
+&#8220;int *@numelts(42)&#8221; can be abbreviated by &#8220;int *{42}&#8221;.</p></li>
+<li><p>@zeroterm: This qualifier is used for zero-terminated sequences,
+such as C-style strings, and provides an alternative to fat
+pointers for doing safe pointer arithmetic without knowing bounds
+statically. This qualifier can only be used on pointers whose
+element type admits zero or NULL as a value, including integral
+types, and @nullable pointer types. Arithmetic in the forward
+direction is possible with zero-terminated pointers (e.g., p++) as
+is a subscript with a positive index (e.g., p[i]). However, the
+compiler inserts code to ensure that the index does not step over
+the final zero. When updating a zero-terminated array, the
+compiler also ensures that the final zero is not overwritten with
+a non-zero value. It is generally best to coerce a thin,
+zero-terminated pointer to a fat, zero-terminated pointer to avoid
+these overheads. This qualifier is only present by default for
+char pointers. It can be overridden with the @nozeroterm
+qualifier. This qualifier may also be used on array types.</p></li>
+<li><p>@nozeroterm: This qualifier is present by default on all pointer
+types except for char pointers. It is used to override the
+implicit @zeroterm qualfier for char pointers. This qualifier may
+also be used on array types.</p></li>
+<li><p>@effect(<code>`e</code>): This qualifier is used to indicate the set of regions into
+which a pointer may point. The qualifier may
+be abbreviated by simply writing the region name after any other
+Cyclone qualifiers. For instance, the type &#8220;<code>int *@notnull
+@effect(`e)</code>&#8221; may be abbreviated as &#8220;<code>int @`e</code>&#8221;. An effect qualifier can also be of the form &#8220;<code>@effect(`e1+`e2+...+`en)</code>&#8221; which represents a set of regions formed by the union of the regions represented by each &#8220;<code>`ei</code>&#8221;.  The rules about
+default region annotations are context-dependent and therefore
+described below. A prior form of this qualifier, &#8220;<code>@region(`r)</code>&#8221; is deprecated.</p></li>
+<li><p>@aqual(&#8230;): This qualifier is used to specify the aliasability of
+the pointer. Valid arguments to the @aqual(&#8230;) qualifier are
+ALIASABLE, UNIQUE, REFCNT, RESTRICTED, each of which impose a
+different aliasing discipline on the pointer. A type variable of
+kind Q may also appear as an argument. See
+<a href='/wiki/Pointers with Restricted Aliasing'>Pointers with Restricted Aliasing</a> for more details.</p>
+
+<ul>
+<li><a href='/wiki/Pointer Subtyping'>Pointer Subtyping</a></li>
+<li><a href='/wiki/Pointer Coercions'>Pointer Coercions</a></li>
+<li><a href='/wiki/Default Region Qualifiers'>Default Region Qualifiers</a></li>
+<li><a href='/wiki/Static Expression Bounds'>Static Expression Bounds</a></li>
+</ul></li>
+</ul>
+</body>
+</html>

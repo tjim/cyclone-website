@@ -1,0 +1,84 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Pointer Subtyping</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Pointer Subtyping</h2>
+
+<p>Some pointer types may be safely used in contexts where another
+pointer type is expected. In particular, T *@notnull is a subtype of
+T *@nullable which means that a not-null pointer can be passed anywhere
+a possibly-null pointer is expected.</p>
+
+<p>Similarly, a T *@numelts(42) pointer can be passed anywhere a
+T *@numelts(30) pointer is expected, because the former describes
+sequences that have at least 42 elements, which satisifes the
+constraint that it has at least 30 elements.</p>
+
+<p>In addition, <code>T*@effect(`r)</code> is a subtype of <code>T*@effect(`r+`s)</code>
+For example the following code is type-correct:</p>
+
+<pre><code>  void foo(int x) {
+    int *@effect(`foo+`H) y = &amp;x;
+    y = new 1;
+  }
+</code></pre>
+
+<p>The first assignment is correct since &amp;x is of type <code>int *@effect(`foo)</code> and the type of y states that y is a pointer into the region <code>`foo</code> or into the heap. The second assignment is correct since &#8220;new 1&#8221; is a heap pointer and y is permitted to point into the heap. </p>
+
+<p>It is possible to specify constraints on effect variables that appear in the parameters of a function as part of the function&#8217;s type. For instance, the type of the following function states that the set of regions represented by <code>`r</code> is a subset of the set of regions represented by <code>`s</code>. </p>
+
+<pre><code>  void foobar(int *`r a, int *`s b : `r &lt; `s) {
+         b = a;
+   }
+</code></pre>
+
+<p>In general, constraints among the effect variables that appear in a function&#8217;s parameters are specified after the arguments in a comma-separated list of constraints separated from that arguments by a colon &#8220;:&#8221;. In the body of the function foobar above, the assignment is legal since <code>`r</code> is guaranteed to be a subset of <code>`s</code>.  (We support another form of constraint &#8220;<code>single(`e)</code>&#8221; which states that the set of regions represented by <code>`e</code> must be a singleton. This is described further in the section &#8220;Pointers with Restricted Aliasing&#8221;.)</p>
+
+<p>Finally, when T is a subtype of S, then <code>T*</code> is a subtype of <code>const
+S*</code>. So, for instance, if we declare:</p>
+
+<pre><code>// nullable int pointers
+typedef int * nintptr_t;
+// not-nullable int pointers
+typedef int *@notnull intptr_t;
+</code></pre>
+
+<p>then <code>intptr_t *</code> is a subtype of <code>const nintptr_t *</code>. Note, however,
+that &#8220;const&#8221; is important to get this kind of deep subtyping.</p>
+
+<p>The following example shows what could go wrong if we allowed deep
+subtyping without the const:</p>
+
+<pre><code>  void f(int *@notnull *@notnull x) {
+    int *@nullable *@notnull y = x; 
+    // would be legal if int *@nullable *@notnull 
+    // was a subtype of int *@notnull *@notnull.
+    *y = NULL;    
+    // legal because *y has type int *@nullable
+    **x;          
+    // seg faults even though the type of *x is 
+    // int *@notnull
+  }
+</code></pre>
+</div>
+</body>
+</html>

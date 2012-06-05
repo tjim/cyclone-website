@@ -1,0 +1,74 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Firefox security holes</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Firefox security holes</h2>
+
+<p>There&#8217;s a new version of Firefox out (1.5.0.2), with fixes for 22
+security issues, <a href="http://secunia.com/advisories/19631/">according to Secunia</a>.  My favorite is this one:</p>
+
+<blockquote>
+  <p>2) An error in the garbage collection in the JavaScript engine can be
+     exploited to cause a memory corruption.</p>
+  
+  <p>   Successful exploitation may allow execution of arbitrary code.</p>
+</blockquote>
+
+<p>Apparently garbage collectors are not perfect!  Who knew.</p>
+
+<p>Among the 22 issues there are a bunch that would clearly be prevented
+by a safe language like Cyclone:</p>
+
+<blockquote>
+  <p>3) A boundary error in the CSS border rendering implementation may be
+     exploited to write past the end of an array.</p>
+  
+  <p>4) An integer overflow in the handling of overly long regular
+     expressions in JavaScript may be exploited to execute arbitrary
+     JavaScript bytecode.</p>
+  
+  <p>6) An error in the &#8220;InstallTrigger.install()&#8221; method can be exploited
+     to cause a memory corruption.</p>
+  
+  <p>13) An error in the processing of a certain sequence of HTML tags can
+      be exploited to cause a memory corruption.</p>
+  
+  <p>Successful exploitation allows execution of arbitrary code.</p>
+  
+  <p>15) Some errors in the DHTML implementation can be exploited to cause
+      a memory corruption.</p>
+  
+  <p>Successful exploitation may allow execution of arbitrary code.</p>
+  
+  <p>16) An integer overflow error in the processing of the CSS
+      letter-spacing property can be exploited to cause a heap-based
+      buffer overflow.</p>
+  
+  <p>Successful exploitation allows execution of arbitrary code.</p>
+</blockquote>
+
+<p>Some of the others might be safety issues as well, but it takes quite
+a bit of digging to figure these things out.</p>
+<p align=right><i>14 April 2006 by trevor <a href="/blog/trevor/Firefox%20security%20holes-20060414171506/">#</a></i></p>
+</div>
+</body>
+</html>

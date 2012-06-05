@@ -1,0 +1,105 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Reference counting take 2</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Reference counting take 2</h2>
+
+<p>I think of the current implementation of reference counting in Cyclone
+as a first draft.  It&#8217;s usable and it&#8217;s useful, but it needs at least
+one more redesign.  Here are some ideas.</p>
+
+<p>Unique pointers, which are the basis of our implementation of
+reference counting, are too hard to use.  The swap operator, unique
+paths, etc., can be used by experts, but I don&#8217;t think your average
+programmer is ready for them, at least in their present incarnation.</p>
+
+<p>Two things save the day: temporary (and usually implicit) aliasing,
+and autorelease for reference counted objects.  These features allow
+us to use reference counted objects anywhere that we can use objects
+allocated in lexical regions, which is just about everywhere.</p>
+
+<p>Autorelease is particularly interesting.  It takes a pointer to a
+reference counted object and passes on the responsibility of
+decrementing the count to a region: the count will be decremented when
+the region is deallocated.  Until then, the pointer can be used just
+like a pointer into the region itself.</p>
+
+<p>The advantage over lexical regions is that the count can be
+incremented, if you need to hold on to the object beyond the lifetime
+of the region.  The disadvantage is that you lose the efficiency of
+bulk deallocation that lexical regions give you.</p>
+
+<h3>Autorelease is great</h3>
+
+<p>I find in my programming that I almost never want a non-autoreleased,
+reference-counted object.  I usually autorelease a reference-counted
+object as soon as I get my hands on it.  A lot of machinery could be
+pruned if we just got rid of the intermediate, non-autoreleased
+state.  So, here&#8217;s a proposal.  Say that</p>
+
+<pre><code>`t *@lifetime(`r)
+</code></pre>
+
+<p>is the type of a pointer to a <code>`t</code> that lives at least as long as
+region <code>`r</code>.  Then we provide a function</p>
+
+<pre><code>`t *@lifetime(`r, `s) extend(region_t&lt;`s&gt;, `t *@lifetime(`r));
+</code></pre>
+
+<p>that ensures the object lives as long as <code>`r</code> <em>and</em> <code>`s</code>.
+This can be implemented by reference counting.</p>
+
+<p>It would be even better if <code>extend</code> operated by side-effect, changing
+the type of its argument rather than returning a new copy of the
+pointer.</p>
+
+<h3>Bulk extend</h3>
+
+<p>One of the most difficult issues to solve with the current scheme is
+to take a complex autoreleased data structure, such as a list, and
+extend its lifetime.  We need the ability to do a bulk extend.</p>
+
+<p>As usual, we can solve this with one more layer of indirection.  Let&#8217;s
+have reference-counted regions: when the count of the region goes to
+zero, everything in the region is deallocated.  Then we can
+autorelease the region; this relates two regions, one region <code>`r</code>
+that lives as long as a second region <code>`s</code>.</p>
+
+<h3>What&#8217;s missing</h3>
+
+<p>First, we really need finalizers.  Notice that for my bulk extend proposal
+I&#8217;m essentially using a finalizer that deallocates all data in region
+<code>`r</code> when its count goes to zero.  Finalizers are generally useful
+for memory management: when you deallocate an object its useful to
+decrement the counts of objects it points to.  Finalizers are
+expensive in this case, but, doing this by hand in Cyclone right now
+is quite painful.</p>
+
+<p>Second, my proposal simply does not handle some kinds of memory
+management.  For example, if you want to have a graph in memory with
+node objects pointing at each other, and the ability to deallocate
+individual nodes as needed, you are pretty much stuck with the current
+reference counting scheme.</p>
+<p align=right><i>13 April 2006 by trevor <a href="/blog/trevor/Reference%20counting%20take%202-20060413215039/">#</a></i></p>
+</div>
+</body>
+</html>

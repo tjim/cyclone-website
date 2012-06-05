@@ -1,0 +1,216 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Region Common Uses</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Region Common Uses</h2>
+
+<p>Although the type system associated with regions is complicated, there
+are some simple common idioms. If you understand these idioms, you
+should be able to easily write programs using regions, and port many
+legacy C programs to Cyclone. The next subsection will explain the
+usage patterns of unique and reference-counted pointers, since they
+are substantially more restrictive than other pointers.</p>
+
+<p>Remember that every pointer points into a region, and although the
+pointer can be updated, it must always point into that same region (or
+a region known to outlive that region). The region that the pointer
+points to is indicated in its type, but omitted regions are filled in
+by the compiler according to context.</p>
+
+<p>When regions are omitted from pointer types in function bodies, the
+compiler tries to infer the region. However, it can sometimes be too
+&#8220;eager&#8221; and end up rejecting code. For example, in</p>
+
+<pre><code>void f1(int * x) {
+  int * y = new 42;
+  y = &amp;x;
+}
+</code></pre>
+
+<p>the compiler uses y&#8217;s initializer to decide that y&#8217;s type is
+<code>int *`H</code>. Hence the assignment is illegal, the parameter&#8217;s region (called
+<code>`f1</code>) does not outlive the heap. On the other hand, this function
+type-checks:</p>
+
+<pre><code>void f2(int x) {
+  int * y = &amp;x;
+  y = new 42;
+}
+</code></pre>
+
+<p>because y&#8217;s type is inferred to be <code>int * `f2</code> and the assignment makes
+y point into a region that outlives <code>`f2</code>. We can fix our first function
+by being more explicit:</p>
+
+<pre><code>void f1(int * x) {
+  int *`f1 y = new 42;
+  y = &amp;x;
+}
+</code></pre>
+
+<p>Function bodies are the only places where the compiler tries to infer
+the region by how a pointer is used. In function prototypes, type
+declarations, and top-level global declarations, the rules for the
+meaning of omitted region annotations are fixed. This is necessary for
+separate compilation: we often have no information other than the
+prototype or declaration.</p>
+
+<p>In the absence of region annotations, function-parameter pointers are
+assumed to point into any possible region. Hence, given</p>
+
+<pre><code>void f(int * x, int * y);
+</code></pre>
+
+<p>we could call f with two stack pointers, a lexical-region pointer and
+a heap-pointer, etc. Hence this type is the &#8220;most useful&#8221; type from
+the caller&#8217;s perspective. But the callee&#8217;s body (f) may not type-check
+with this type. For example, x cannot be assigned a heap pointer
+because we do not know that x points into the heap. If this is
+necessary, we must give x the type <code>int *`H</code>. Other times, we may not
+care what region x and y are in so long as they are the <em>same</em>
+region. Again, our prototype for f does not indicate this, but we
+could rewrite it as</p>
+
+<pre><code>void f(int *`r x, int *`r y);
+</code></pre>
+
+<p>Finally, we may need to refer to the region for x or y in the function
+body. If we omit the names (relying on the compiler to make up names),
+then we obviously won&#8217;t be able to do so.</p>
+
+<p>Formally, omitted regions in function parameters are filled in by
+fresh region names and the function is &#8220;region polymorphic&#8221; over these
+names (as well as all explicit regions).</p>
+
+<p>In the absence of region annotations, function-return pointers are
+assumed to point into the heap. Hence the following function will not
+type-check:</p>
+
+<pre><code>int * f(int * x) { return x; }
+</code></pre>
+
+<p>Both of these functions will type-check: </p>
+
+<pre><code>int * f(int *`H x) { return x; }
+int *`r f(int *`r x) {return x; }
+</code></pre>
+
+<p>The second one is more useful because it can be called with any region.  </p>
+
+<p>In type declarations (including typedef) and top-level variables,
+omitted region annotations are assumed to point into the heap. In the
+future, the meaning of typedef may depend on where the typedef is
+used. In the meantime, the following code will type-check because it
+is equivalent to the first function in the previous example:</p>
+
+<pre><code>typedef int * foo_t;
+foo_t f(foo_t x) { return x; }
+</code></pre>
+
+<p>If you want to write a function that creates new objects in a region
+determined by the caller, your function should take a region handle as
+one of its arguments. The type of a handle is <code>region_t&lt;`r&gt;</code>, where
+<code>`r</code> is the region information associated with pointers into the
+region. For example, this function allocates a pair of integers into
+the region whose handle is r:</p>
+
+<pre><code>  $(int,int)*`r f(region_t&lt;`r&gt; r, int x, int y) { 
+     return rnew(r) $(x,y);
+  }
+</code></pre>
+
+<p>Notice that we used the same <code>`r</code> for the handle and the return type. We
+could have also passed the object back through a pointer parameter
+like this:</p>
+
+<pre><code>  void f2(region_t&lt;`r&gt; r,int x,int y,$(int,int)*`r *`s p){ 
+    *p = rnew(r) $(7,9); 
+  }
+</code></pre>
+
+<p>Notice that we have been careful to indicate that the region where <code>*p</code>
+lives (corresponding to <code>`s</code>) may be different from the region for which
+r is the handle (corresponding to <code>`r</code>). Here&#8217;s how to use f2:</p>
+
+<pre><code>  { region rgn;
+    $(int,int) *`rgn x = NULL; 
+    f2(rgn,3,4,&amp;x);
+  }
+</code></pre>
+
+<p>The <code>`s</code> and <code>`rgn</code> in our example are unnecessary because they
+would be inferred.</p>
+
+<p>typedef, struct, and datatype declarations can all be parameterized by
+regions, just as they can be parameterized by types. For example, here
+is part of the list library.</p>
+
+<pre><code>  struct List&lt;`a,`r&gt;{`a hd; struct List&lt;`a,`r&gt; *`r tl;};
+  typedef struct List&lt;`a,`r&gt; *`r list_t&lt;`a,`r&gt;;
+
+  // return a fresh copy of the list in r2
+  list_t&lt;`a,`r2&gt; rcopy(region_t&lt;`r2&gt; r2, list_t&lt;`a&gt; x) {
+    list_t result, prev;
+
+    if (x == NULL) return NULL;
+    result = rnew(r2) List{.hd=x-&gt;hd,.tl=NULL};
+    prev = result;
+    for (x=x-&gt;tl; x != NULL; x=x-&gt;tl) {
+      prev-&gt;tl = rnew(r2) List(x-&gt;hd,NULL);
+      prev = prev-&gt;tl;
+    }
+    return result;
+  }  
+  list_t&lt;`a&gt; copy(list_t&lt;`a&gt; x) {
+    return rcopy(heap_region, x);
+  }
+
+  // Return the length of a list. 
+  int length(list_t x) {
+    int i = 0;
+    while (x != NULL) {
+      ++i;
+      x = x-&gt;tl;
+    }
+    return i;
+  }
+</code></pre>
+
+<p>The type list_t&lt;<em>type</em>,<em>rgn</em>> describes pointers to lists whose
+elements have type <em>type</em> and whose &#8220;spines&#8221; are in <em>rgn</em>.</p>
+
+<p>The functions are interesting for what they <em>don&#8217;t</em> say. Specifically,
+when types and regions are omitted from a type instantiation, the
+compiler uses rules similar to those used for omitted regions on
+pointer types. More explicit versions of the functions would look like
+this:</p>
+
+<pre><code>  list_t&lt;`a,`r2&gt; rcopy(region_t&lt;`r2&gt; r2, list_t&lt;`a,`r1&gt; x) {
+    list_t&lt;`a,`r2&gt; result, prev;
+    ...
+  }
+  list_t&lt;`a,`H&gt; copy(list_t&lt;`a,`r&gt; x) { ... }
+  int length(list_t&lt;`a,`r&gt; x) { ... }
+</code></pre>
+</div>
+</body>
+</html>

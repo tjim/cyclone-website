@@ -1,0 +1,198 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Datatypes</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Datatypes</h2>
+
+<p>At its simplest, a datatype looks just like an enum declaration. For
+example, we could say:</p>
+
+<pre><code>  datatype Color { Red, Green, Blue };
+</code></pre>
+
+<p>As with enum, the declaration creates a type (called datatype Color)
+and three constants Red, Green, and Blue. Unlike enum, these constants
+do not have type datatype Color. Instead, each variant has its <em>own
+type</em>, namely datatype Color.Red, datatype Color.Green, and datatype
+Color.Blue. However, a pointer to one of these values can be treated
+as a sub-type of a pointer to a datatype Color. So you can write:</p>
+
+<pre><code>  datatype Color.Red red = Red;
+  datatype Color *c = &amp;red;
+</code></pre>
+
+<p>In this simple example, we are splitting hairs, but we will soon find
+all these distinctions useful.</p>
+
+<p>Unlike enum, datatype variants may carry any fixed number of values,
+as in this example:</p>
+
+<pre><code>  datatype Shape {
+    Point,
+    Circle(float),
+    Ellipse(float,float),
+    Polygon(int,float),
+  };
+</code></pre>
+
+<p>A Point has no accompanying information, a Circle has a radius, an
+Ellipse has two axis lengths, and a (regular) Polygon has a number of
+sides and a radius. (The value fields do not have names, so it is
+often better style to have a variant carry one value of a struct type,
+which of course has named members.) This example creates five types:
+datatype Shape, datatype Shape.Point, datatype Shape.Circle, datatype
+Shape.Ellipse, and datatype Shape.Polygon. Like in our previous
+example, datatype Shape.Point* is a subtype of datatype Shape* and
+Point is a constant of type datatype Shape.Point.</p>
+
+<p>Variants that carry one or more values are treated differently. Circle
+becomes a <em>constructor</em>; given a float it produces an object of type
+datatype Shape.Circle, for example Circle(3.0). Similarly,
+Ellipse(0,0) has type datatype Shape.Ellipse (thanks to implicit casts
+from int to float for 0) and Polygon(7,4.0) has type datatype
+Shape.Polygon. The arguments to a constructor can be arbitrary
+expressions of the correct type, for example, Ellipse(rand(),
+sqrt(rand())).</p>
+
+<p>Here are some examples which allocate a Point and Circle respectively, but then use subtyping to treat the resulting values as if they are Shape pointers: </p>
+
+<pre><code>  datatype Shape *s1 = new Point;
+  datatype Shape *s2 = new Circle(3.0);
+</code></pre>
+
+<p>Datatypes are particularly useful for building recursive
+structures. For example, a small language of arithmetic expressions
+might look like this:</p>
+
+<pre><code>  enum Unops { Negate, Invert};
+  enum Binops { Add, Subtract, Multiply, Divide };
+  typedef datatype Exp *@notnull exp_t;
+  datatype Exp {
+    Int(int),
+    Float(float),
+    Unop(enum Unops, exp_t),
+    Binop(enum Binops, exp_t, exp_t)
+  };
+</code></pre>
+
+<p>A function returning an expression representing the multiplication of
+its parameter by two can be written like this:</p>
+
+<pre><code>  exp_t double_exp(datatype Exp @e) {
+    return new Binop(Multiply, e, new Int(2));
+  }
+</code></pre>
+
+<h5>Accessing Datatype Variants</h5>
+
+<p>Given a value of a datatype type, such as datatype Shape, we do not
+know which variant it is. It could be a Circle or Shape, etc. In
+Cyclone, we use <em>pattern matching</em> to determine which variant a given
+datatype value actually is, and to extract the arguments that were
+used to build the datatype value. For example, here is how you could
+define isCircle:</p>
+
+<pre><code>  bool isCircle(datatype Shape *s) {
+    switch(s) {
+    case &amp;Circle(r): return true;
+    default: return false;
+    }
+  }
+</code></pre>
+
+<p>When a switch statement&#8217;s argument is a pointer to a datatype, the
+cases describe variants. One variant of datatype <code>Shape *</code> is a pointer
+to a Circle, which carries one value. The corresponding pattern has &amp;
+for the pointer, Circle for the constructor name, and one identifier
+for each value carried by Circle. The identifiers are binding
+occurrences (declarations, if you will), and the initial values are
+the values of the fields of the Circle at which s points. The scope is
+the extent of the case clause.</p>
+
+<p>Here is another example:  </p>
+
+<p><em>(The reader is asked to indulge compiler-writers who have forgotten
+basic geometry.)</em></p>
+
+<pre><code>  extern area_of_ellipse(float,float);
+  extern area_of_poly(int,float);
+  float area(datatype Shape *s) {
+    float ans;
+    switch(s) {
+    case &amp;Point:
+      ans = 0;
+      break;
+    case &amp;Circle(r):
+      ans = 3.14*r*r;
+      break;
+    case &amp;Ellipse(r1,r2):
+      ans = area_of_ellipse(r1,r2);
+      break;
+    case &amp;Polygon(sides,r):
+      ans = area_of_poly(sides,r);
+      break;
+    }
+    return ans;
+  }
+</code></pre>
+
+<p>The cases are compared in order against s. The following are
+compile-time errors:</p>
+
+<ul>
+<li>It is possible that a member of the datatype type matches none of
+the cases. Note that default matches everything.</li>
+<li>A case is useless because it could only match if one of the
+earlier cases match. For example, a default case at the end of the
+switch in area would be an error.</li>
+</ul>
+
+<p>As you can discover in <a href='/wiki/Pattern Matching'>Pattern Matching</a>, Cyclone has much richer
+pattern-matching support than we have used here.</p>
+
+<h5>Polymorphism and Datatypes</h5>
+
+<p>A datatype declaration may be polymorphic over types and regions just
+like a struct or union definition (see <a href='/wiki/Polymorphism'>Polymorphism</a>). For example,
+here is a declaration for binary trees where the leaves can hold some
+BoxKind <code>`a</code>:</p>
+
+<pre><code>  datatype Tree&lt;`a&gt;  {
+    Leaf(`a);
+    Node(datatype Tree&lt;`a&gt;*, datatype Tree&lt;`a&gt;*);
+  };
+</code></pre>
+
+<p>In the above example, the root may be in any region, but all children
+will be in the heap. The following version allows the children to be
+in any region, but they must all be in the same region. (The root can
+still be in a different region.)</p>
+
+<pre><code>  datatype Tree&lt;`a,`r&gt;  {
+    Leaf(`a);
+    Node(datatype Tree&lt;`a,`r&gt; *`r, 
+         datatype Tree&lt;`a,`r&gt; *`r);
+  };
+</code></pre>
+</div>
+</body>
+</html>

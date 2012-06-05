@@ -1,0 +1,43 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: GCC</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>GCC</h2>
+
+<p><a href="http://gcc.gnu.org/">GCC is the Gnu Compiler Collection</a>.  We use it as the back end C compiler for Cyclone.
+We use some special features of gcc, so, other C compilers won&#8217;t work.</p>
+
+<p>Cyclone up to version 1.0 works best with some variant of gcc version 3
+(3.4, 3.3, etc.). Unfortunately, version 1.0 does not work with version 4 of gcc, and Cyclone&#8217;s <code>configure</code> script will complain if your C compiler
+is gcc version 4.</p>
+
+<p><strong>Newer versions of Cyclone (in our SVN repository) will work with
+gcc 4</strong>.  Instructions for accessing the SVN version are given in
+<a href='/wiki/Download'>Download</a>.</p>
+
+<p>You can see your gcc version by running</p>
+
+<pre><code>gcc --version
+</code></pre>
+</div>
+</body>
+</html>

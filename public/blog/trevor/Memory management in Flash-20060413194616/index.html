@@ -1,0 +1,51 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Memory management in Flash</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Memory management in Flash</h2>
+
+<p><a href="http://www.kaourantin.net/2005/09/garbage-collection-in-flash-player-8.html">This article</a> discusses how Flash moved from reference counting to garbage collection for their ActionScript implementation.</p>
+
+<p>They decided to make the change for efficiency: the memory and cpu overhead
+for maintaining reference counts in large Flash applications was getting
+noticeable.  Circular references (leading to leaks) were a secondary
+issue.</p>
+
+<p><a href="http://www.macromedia.com/devnet/flashplayer/articles/fp8_performance.html">Another article</a> gives some numbers: the overhead of reference counting
+was about 20% of runtime, and the overhead of the new garbage collector is only
+1&#8211;2%.  (The collector is an incremental mark and sweep collector.)  Also, memory
+use is reduced by about 50%.</p>
+
+<p>I don&#8217;t consider this to be a nail in the coffin for reference counting.
+We&#8217;ve seen with Cyclone that a mix of memory management strategies can give the
+greatest efficiency.  Most applications can get by with stack and (lexical)
+region allocation for most objects, and only rarely need the additional
+capabilities of reference counts.  Moreover, autorelease can eliminate a lot
+of the overhead of maintaining counts.</p>
+
+<p>On the other hand, it would be nice to find out more details: was every object
+reference counted?  what is the &#8220;deferred reference counting&#8221; optimization
+they used?</p>
+<p align=right><i>13 April 2006 by trevor <a href="/blog/trevor/Memory%20management%20in%20Flash-20060413194616/">#</a></i></p>
+</div>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Polymorphism</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Polymorphism</h2>
+
+<h2>First-class polymorphism</h2>
+
+<p>Use `a instead of void *.
+In Cyclone you can store or pass polymorphic values without losing their
+polymorphism.  Here&#8217;s an example:</p>
+
+<pre><code>/* First-class polymorphism example */
+#include &lt;list.h&gt;
+#include &lt;stdio.h&gt;
+
+using List;
+
+typedef `a (@id_t)&lt;`a&gt;(`a);
+typedef int (@f_t)(int); 
+
+`a id(`a x) { return x; }
+`a id2(`a x) { return x; }
+int mono(int x) {return x; }
+
+list_t&lt;id_t&gt; l = NULL;
+
+int main() {
+  l = new List(id&lt;&gt;,l);    // &lt;&gt; prevents instantiation
+  l = new List(id2&lt;&gt;,l);
+  // l = new List(mono,l); // no good
+  printf("%d\n",l-&gt;hd(3));
+  printf("%s\n",l-&gt;hd("hello"));
+  return 0;
+}
+</code></pre>
+</div>
+</body>
+</html>

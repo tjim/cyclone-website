@@ -1,0 +1,87 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Let Declarations</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Let Declarations</h2>
+
+<pre><code>  let x = e;
+</code></pre>
+
+<p>In Cyclone, you can write
+as a local declaration. The meaning is the same as t x = e; where t is
+the type of e. In other words, x is bound to the new
+variable. Patterns are much more powerful because they can bind
+several variables to different parts of an aggregate object. Here is
+an example:</p>
+
+<pre><code>  struct Pair {  int x; int y; };
+  void f(struct Pair pr) {
+    let Pair(fst,snd) = pr;
+    ...
+  }
+</code></pre>
+
+<p>The pattern has the same structure as a struct Pair with parts being
+variables. Hence the pattern is a match for pr and the variables are
+initialized with the appropriate parts of pr. Hence &#8220;let Pair(fst,snd)
+= pr&#8221; is equivalent to &#8220;int fst =pr.x; int snd = pr.y&#8221;. A
+let-declaration&#8217;s initializer is evaluated only once.</p>
+
+<p>Patterns may be as structured as the expressions against which they
+match. For example, given type</p>
+
+<pre><code>  struct Quad { struct Pair p1; struct Pair p2; };
+</code></pre>
+
+<p>patterns for matching against an expression of type struct Quad could
+be any of the following (and many more because of constants and
+wildcards&#8211;see below):</p>
+
+<ul>
+<li>Quad(Pair(a,b),Pair(c,d))</li>
+<li>Quad(p1, Pair(c,d))</li>
+<li>Quad(Pair(a,b), p2)</li>
+<li>Quad(p1,p2)</li>
+<li>q</li>
+</ul>
+
+<p>In general, a let-declaration has the form &#8220;let p = e;&#8221; where p is a
+pattern and e is an expression. In our example, the match always
+succeeds, but in general patterns can have compile-time errors or
+run-time errors.</p>
+
+<p>At compile-time, the type-checker ensures that the pattern makes sense
+for the expression. For example, it rejects &#8220;let Pair(fst,snd) = 0&#8221;
+because 0 has type int but the pattern only makes sense for type
+struct Pair.</p>
+
+<p>Certain patterns are type-correct, but they may not match run-time
+values. For example, constants can appear in patterns, so &#8220;let
+Pair(17,snd) = pr;&#8221; would match only when pr.x is 17. Otherwise the
+exception Match_Exception is thrown. Patterns that may fail are rarely
+useful and poor style in let-declarations; the compiler emits a
+warning when you use them. In switch statements, possibly-failing
+patterns are the norm&#8212;as we explain in <a href='/wiki/Switch Statements'>Switch Statements</a>, the
+whole point is that one of the cases&#8217; patterns should match.</p>
+</div>
+</body>
+</html>

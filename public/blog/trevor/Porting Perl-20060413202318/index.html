@@ -1,0 +1,73 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Porting Perl</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Porting Perl</h2>
+
+<p>Perl is one of the great languages, measured in utility and in influence
+on other languages.  Language snobs can argue about the fine details,
+but there&#8217;s no denying that most languages going forward will have
+facilities for regular expression parsing and extraction, and these
+will most probably be compatible with Perl.</p>
+
+<p>Inevitably one wants to port some useful bit of Perl to (<em>insert favorite
+language here</em>).  I needed to do this for some of the web site software.
+It&#8217;s tedious and error prone work.  One of the main difficulties is
+translating Perl regular expressions.  You might have a Perl compatible
+regular expression library for your language, but it probably uses
+native string literals for the regular expressions, not Perl string literals.</p>
+
+<p>Perl has unusual conventions for writing regular expressions.  For example,
+they can be delimited by practically any character:</p>
+
+<pre><code>s/foo/bar/
+</code></pre>
+
+<p>or</p>
+
+<pre><code>s!foo!bar!
+</code></pre>
+
+<p>The point is that if you want to match the character &#8216;/&#8217;, you can use a
+different delimiter, and then you don&#8217;t have to escape the &#8216;/&#8217;.</p>
+
+<p>Perl also has a way to ignore whitespace in patterns, the <code>x</code> option:</p>
+
+<pre><code>s/hello
+  world//x
+</code></pre>
+
+<p>will delete an occurrence of &#8220;helloworld&#8221;.  This is useful for complicated
+patterns (you can also use comments in the pattern), but it also means that
+if you want to match a newline (<code>\n</code>) in the pattern, you&#8217;ve got to be very
+careful in your translation of the pattern to your favorite language.</p>
+
+<p>These issues and a bunch of others convinced me that it would be worth
+writing a little tool to help converting Perl to Cyclone.  It&#8217;s very
+incomplete (only translates s/// and m// and qr//) but for some Perl
+programs (coincidentally, the ones I wanted to translate) it works great.</p>
+
+<p>Check it out in otherlibs/pcre/perl2cyclone.pl.</p>
+<p align=right><i>14 April 2006 by trevor <a href="/blog/trevor/Porting%20Perl-20060413202318/">#</a></i></p>
+</div>
+</body>
+</html>

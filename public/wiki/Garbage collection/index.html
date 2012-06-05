@@ -1,0 +1,40 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Garbage collection</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Garbage collection</h2>
+
+<p>By default, Cyclone links the <a href="http://www.hpl.hp.co.uk/personal/Hans_Boehm/gc/">Boehm-Demers-Weiser conservative garbage collector</a>
+into your Cyclone program.  The garbage collector will automatically recover heap
+allocated data.</p>
+
+<p>If you want to run without the garbage collector, just pass the <code>-nogc</code> flag to
+Cyclone when linking:</p>
+
+<pre><code>cyclone -nogc -o foobar foo.o bar.o
+</code></pre>
+
+<p>The resulting binary will not include the garbage collector, and your program is
+responsible for explicitly deallocating heap data.</p>
+</div>
+</body>
+</html>

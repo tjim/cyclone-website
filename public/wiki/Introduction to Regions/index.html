@@ -1,0 +1,132 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Introduction to Regions</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Introduction to Regions</h2>
+
+<p>C gives programmers complete control over how memory is managed. An
+expert programmer can exploit this to write very fast and/or
+space-efficient programs. However, bugs that creep into
+memory-management code can cause crashes and are notoriously hard to
+debug.</p>
+
+<p>Languages like Java and ML use garbage collectors instead of leaving
+memory management in the hands of ordinary programmers. This makes
+memory management much safer, since the garbage collector is written
+by experts, and it is used, and, therefore, debugged, by every
+program. However, removing memory management from the control of the
+applications programmer can make for slower programs.</p>
+
+<p>Safety is the main goal of Cyclone, so we provide a garbage
+collector. But, like C, we also want to give programmers as much
+control over memory management as possible, without sacrificing
+safety. Cyclone&#8217;s region system is a way to give programmers more
+explicit control over memory management.</p>
+
+<p>In Cyclone, objects are placed into <em>regions</em>. A region is simply an
+area of memory that is allocated and deallocated all at once (but not
+for our two special regions; see below). So to deallocate an object,
+you deallocate its region, and when you deallocate a region, you
+deallocate all of the objects in the region. Regions are sometimes
+called &#8220;arenas&#8221; or &#8220;zones.&#8221;</p>
+
+<p>Cyclone has four kinds of region: </p>
+
+<h4>Stack regions</h4>
+
+<p>As in C, local variables are allocated on the runtime stack; the stack
+grows when a block is entered, and it shrinks when the block exits. We
+call the area on the stack allocated for the local variables of a
+block the <em>stack region</em> of the block. A stack region has a fixed
+size&#8211;it is just large enough to hold the locals of the block, and no
+more objects can be placed into it. The region is deallocated when the
+block containing the declarations of the local variables finishes
+executing. With respect to regions, the parameters of a function are
+considered locals&#8211;when a function is called, its actual parameters
+are placed in the same stack region as the variables declared at the
+start of the function.</p>
+
+<h4>Lexical regions</h4>
+
+<p>Cyclone also has <em>lexical regions</em>, which are so named because, like
+stack regions, their lifetime is delimited by the surrounding
+scope. Unlike stack regions, however, you can can add new objects to a
+lexical region over time. You create a lexical region in Cyclone with
+a statement,</p>
+
+<pre><code>  region _ identifier_; _ statement_
+</code></pre>
+
+<p>This declares and allocates a new lexical region, named <em>identifier</em>,
+and executes <em>statement</em>. After <em>statement</em> finishes executing, the
+region is deallocated. Within <em>statement</em>, objects can be added to the
+region (see <a href='/wiki/Region Allocation'>Region Allocation</a>).</p>
+
+<p>Typically, <em>statement</em> is a compound statement: </p>
+
+<pre><code>  { region _identifier_;
+    _ statement_1
+    ...
+    _ statement__n_
+  }
+</code></pre>
+
+<h4>The heap region</h4>
+
+<p>Cyclone has a special region called the <em>heap</em>. There is only one
+heap, whose type is denoted `H, and it is never deallocated. New
+objects can be added to the heap at any time (the heap can
+grow). Cyclone uses a garbage collector to automatically remove
+objects from the heap when they are no longer needed. You can think of
+garbage collection as an optimization that tries to keep the size of
+the heap small. (Alternatively, you can avoid garbage collection all
+together by specifying the -nogc flag when building the executable.)</p>
+
+<h4>Dynamic regions</h4>
+
+<p>Stack and lexical regions obey a strictly last-in-first-out (LIFO)
+lifetime discipline. This is often convenient for storing temporary
+data, but sometimes, the lifetime of data cannot be statically
+determined. Such data can be allocated in a <em>dynamic region</em>. A
+dynamic region supports deallocation at (essentially) any program
+point. However, before the data in a dynamic region may be accessed,
+the dynamic region must be <em>opened</em>. The open operation fails by
+throwing an exception if the dynamic region has already been
+freed. Note that each data access within a dynamic region does not
+require a check. Rather, you can open a given dynamic region once,
+access the data many times with no additional cost, and then exit the
+scope of the open. Thus, dynamic regions amortize the cost of checking
+whether or not data are still live and localize failure points. We
+describe dynamic regions in detail in Section
+  <a href="/wiki/Pointers%20with%20Restricted%20Aliasing#DynamicRegions">Dynamic
+Regions</a>.</p>
+
+<p>Cyclone forbids dereferencing dangling
+pointers. This restriction is part of the type system: it&#8217;s a
+compile-time error if a dangling pointer (a pointer into a deallocated
+region or to a deallocated object) might be dereferenced. There are no
+run-time checks of the form, &#8220;is this pointing into a live region?&#8221; As
+explained in <a href='/wiki/Region Common Uses'>Region Common Uses</a>, each pointer type has a region
+and objects of the type may only point into that region.</p>
+</div>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: OLPC</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>OLPC</h2>
+
+<p>The <a href="http://laptop.org/">One Laptop Per Child</a> (OLPC) project has some interesting
+constraints.  The plan is to distribute millions of laptops to the
+developing world, where power and connectivity will be intermittent.
+The laptops themselves will have to be inexpensive, so they will have
+limited CPU, RAM, and storage (flash only, no disk drive), much less
+than what you typically find on a laptop in the US.</p>
+
+<p>This would be a nice platform for Cyclone: besides being
+resource-constrained, OLPC will need robust software, since it will be
+difficult to update.  Cyclone&#8217;s safety combined with ability to
+control the memory footprint would be a win on both counts.</p>
+
+<p>After considering Java (and rejecting it in part because it is not an
+open platform), the project has settled on Python as the basic
+development platform.  Python has a reputation for speed, but it would
+be interesting to see how it compares to Cyclone in speed and memory
+footprint.  On the small benchmarks of <a href="http://shootout.alioth.debian.org/">The Computer Language
+Shootout</a>, C (compiled with gcc) seems to be something like 15
+times faster and less memory hungry than Python.  Assuming that
+Cyclone (without garbage collection) is close to C, there is still a
+good case to be made for Cyclone.</p>
+
+<h3>Further reading</h3>
+
+<p><a href="http://wiki.laptop.org/wiki/Main_Page">There&#8217;s a wiki</a>.</p>
+
+<p><a href="http://www.gettysfamily.org/wordpress/">Jim Gettys has a blog</a> discussing technical issues like the
+hardware, system administration, and localization on a large scale.</p>
+
+<p>Nicholas Negroponte is the chairman of the project and <a href="http://news.com.com/Negroponte+Slimmer+Linux+needed+for+100+laptop/2100-7346_3-6057456.html">gave a
+speech</a> earlier this month calling for smaller, faster, thinner
+Linux distributions, and giving the latest description of the
+hardware.</p>
+
+<p>The distribution will be based on Fedora, which has an <a href="http://fedoraproject.org/wiki/OLPC">OLPC page</a>.</p>
+<p align=right><i> 2 May 2006 by trevor <a href="/blog/trevor/OLPC-20060502042858/">#</a></i></p>
+</div>
+</body>
+</html>

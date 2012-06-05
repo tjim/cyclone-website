@@ -1,0 +1,78 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Safety</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Safety</h2>
+
+<p>It&#8217;s usually a good idea to avoid programming language flames, but
+<a href="http://www.journalhome.com/codecraft/9003/">this one from last year</a> is a bit amusing.  It defines &#8220;freedom
+languages&#8221; (Ruby, Python, Perl, Smalltalk) and &#8220;safety languages&#8221;
+(C++, Java, C#, VB, Delphi, Haskell, Nice).  At the end of the piece
+the author treats us to this astonishing revelation:</p>
+
+<blockquote>
+  <p>All other things being equal, I think I&#8217;ll choose freedom</p>
+</blockquote>
+
+<p>Furthermore, &#8220;freedom&#8221; = boxers, &#8220;safety&#8221; = tighty whities (ok, not
+really).</p>
+
+<p>The useful bit of information is that the author includes C++ on his
+list of &#8220;safety&#8221; languages.  This points up a bit of a problem for
+Cyclone: there&#8217;s no accepted definition of &#8220;safety,&#8221; and, in fact,
+people use the word to describe unsafe languages.</p>
+
+<p>I don&#8217;t think there&#8217;s a good fix for this; if I recall, Matthias
+Felleisen took a stab at a general definition of language safety, but
+I don&#8217;t know that it went anywhere, and I&#8217;m not aware of other work on
+the topic.  And in the end, the general public will use the word as
+they want to, not the way we want them to.</p>
+
+<p>I think that the best we can do is try to give examples of what we
+consider safe and unsafe.  We should build a wiki page to collect this
+information.  In the meantime, here&#8217;s one (perhaps) surprising
+example:</p>
+
+<h3>Q: if a program segfaults, is it safe?</h3>
+
+<p>My answer is, <strong>yes</strong>, that may be safe.</p>
+
+<p>For example, imagine that you could magically transform every C
+program in the world so that in case of a buffer overflow, the program
+would immediately segfault.  This would be great!  It would mean that
+instead of being corrupted, programs would halt immediately if they
+were attacked.  In other words, the system would have a <em>fail-stop</em>
+property.</p>
+
+<p>Fail-stop would mean the difference between a corrupted, &#8220;zombie&#8221;
+program under the remote control of some attacker, and a dead program.
+Not ideal, but a great improvement.  In fact, fail-stop is a crucial
+ingredient of one definition of safety.</p>
+
+<p>The same argument can be applied in other cases.  For example, there
+is no safety reason to check for NULL pointers, because a NULL pointer
+dereference on modern machines will cause a segfault.  There may be
+other reasons (recovery from errors), but it isn&#8217;t a safety issue.</p>
+<p align=right><i>24 April 2006 by trevor <a href="/blog/trevor/Safety-20060425015248/">#</a></i></p>
+</div>
+</body>
+</html>

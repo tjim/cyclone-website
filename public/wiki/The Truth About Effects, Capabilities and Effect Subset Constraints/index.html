@@ -1,0 +1,136 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: The Truth About Effects, Capabilities and Effect Subset Constraints</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>The Truth About Effects, Capabilities and Effect Subset Constraints</h2>
+
+<p>An <em>effect</em> or <em>capability</em> is a set of (compile-time) region
+names. We use <em>effect</em> to refer to the region names that must be
+&#8220;live&#8221; for some expression to type-check and <em>capability</em> to refer to
+the region names that are &#8220;live&#8221; at some program point. A <em>effect
+subset constraint</em> indicates that all region names that appear in one
+effect qualifier also appear in another effect qualifier. Each program
+point has a set of &#8220;known effect subset relations&#8221;.</p>
+
+<p>The intuition is that a program point&#8217;s capability and subset
+relations must imply that an expression&#8217;s effect describes live
+regions, else the expression does not type-check. As we&#8217;ll see,
+default effects for functions were carefully designed so that most
+Cyclone code runs no risk of such an &#8220;effect check&#8221; ever failing. But
+using existential types effectively requires a more complete
+understanding of the system, though perhaps not as complete as this
+section presents.</p>
+
+<p>The form of effects or capabilities is described as follows: </p>
+
+<ul>
+<li>{} is the empty set. At most the heap region is accessed by an
+expression having this effect.</li>
+<li><code>r is the set containing the indivisible effect</code>r. This effect
+variable can be isntantiated with a set consisting of one or more
+region names.</li>
+<li>e1 + e2 is the set containing the effects e1 and e2. That is, we
+write + for set-union.</li>
+<li>regions(t), where t is a type is the set containing all of the
+region names contained in t and regions(<code>a) for all type variables
+</code>a contained in t.</li>
+</ul>
+
+<p>The description of regions(t) appears circular, but in fact if we gave
+the definition for each form of types, it would not be. The point is
+that regions(<code>a) is an "atomic effect" in the sense that it stands for
+a set of regions that cannot be further decomposed without knowing
+</code>a. The primary uses of regions(t) are descibed below.</p>
+
+<p>The form of an effect subset constraint is e1 &lt;= e2 where e1 and e2
+are both effects.</p>
+
+<p>We now describe the capability at each program point. On function
+entry, the capability is the function&#8217;s effect (typically the regions
+of the parameters and result, but fully described below). In a local
+block or a growable-region statement, the capability is the capability
+of the enclosing context plus the block/statement&#8217;s region name.</p>
+
+<p>The known effect subset relation at a program point are only those
+that are mentioned in the type of the function within which the
+program point occurs.</p>
+
+<p>We can now describe an expression&#8217;s effect: If it reads or writes to
+memory described by a region name <code>r, then the effect contains
+{</code>r}. If it calls a function with effect e, then the effect conatins
+e. Every function (type) has an effect, but programmers almost never
+write down an explicit effect. To do so, one puts &#8220;; e&#8221; at the end of
+the parameter list, wehre e is an effect. For example, we could write:</p>
+
+<pre><code>`a id(`a x; {}) { return x; }
+</code></pre>
+
+<p>because the function does not access any memory.  </p>
+
+<p>If a function takes parameters of types t1,&#8230;,tn and returns a value
+of type t, the default effect is simply
+regions(t1)+&#8230;+regions(tn)+regions(t). In English, the default
+assumption is that a function may dereference any pointers it is
+passed, so the corresponding regions must be live. In our example
+above, the default effect would have been regions(<code>a). If the caller
+had instantiated</code>a with int*<code>r, then with the default effect, the
+type-checker would require</code>r to be live, but with the explicit effect
+{} it would not. However, dangling pointers can be created only when
+using existential types, so the difference is rarely noticed.</p>
+
+<p>By default, a function (type) has no effect subset constraints. That
+is, the function assumes no relationship between all the effect
+variables that appear in its type. Adding explicit subset
+relationships enables more subtyping in the callee and more stringent
+requirements at the call site (namely that the relationship holds).</p>
+
+<p>We can describe when a capability e and a set of effect subset
+relations s imply an effect, although your intuition probably
+suffices. A &#8220;normalized effect&#8221; is either {} or unions of &#8220;atomic
+effects&#8221;, where an atomic effect is either {<code>r} or regions(</code>a). For
+any effect e1, we can easily compute an equivalent normalized effect
+e2. Now, e and s imply e1 if they imply every {<code>r} and regions(</code>a) in
+e2. To imply {<code>r} (or regions(</code>a)), we need {<code>r} (or regions(</code>a)) to
+be in (a normalized effect of) e) or for b to contain some <code>r &lt;=</code>r2
+such that e and b imply `r2. Or something like that.</p>
+
+<p>All of these complications are unnecessary except for existential
+types, to which we now return. Explicit bounds are usually necessary
+to make values of existential types usable. To see why, consider the
+example from the previous section, with the struct declaration changed
+to remove the explicit bound:</p>
+
+<pre><code>struct T {&lt;`a&gt; 
+  `a f1; 
+  int f(`a, int); 
+};
+</code></pre>
+
+<p>(So the declaration of t should just have type struct T.) Now the
+function call f(arg,19) at the end of g will not type-check because
+the (default) effect for f includes regions(<code>b), which cannot be
+established at the call site. But with the bound, we know that
+regions(</code>b) &lt;=`H, which is sufficient to prove the call won&#8217;t read
+through any dangling pointers.</p>
+</div>
+</body>
+</html>

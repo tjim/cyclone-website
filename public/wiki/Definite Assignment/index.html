@@ -1,0 +1,293 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Definite Assignment</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Definite Assignment</h2>
+
+<p>It is unsafe to allow memory to be used as a value of a particular
+type just because the memory has been allocated at that type. In other
+words, you cannot use memory that has not been properly
+initialized. Most safe languages enforce this invariant by making
+allocation and initialization a single operation. This solution is
+undesirable in Cyclone for at least two reasons:</p>
+
+<ul>
+<li><p>Many idioms require declaring variables in a wider scope than is
+convenient for initializing the variable.</p></li>
+<li><p>C code, which we wish to port to Cyclone, is full of separated
+allocation and initialization, including all heap-allocated
+storage (i.e., malloc).</p></li>
+</ul>
+
+<p>Inspired by Java&#8217;s rules for separate declaration and initialization
+of local variables, Cyclone has a well-defined, sound system for
+checking that memory is written before it is used. The rules are more
+complicated than in Java because we support pointers to uninitialized
+memory, as is necessary for malloc, and because C&#8217;s
+order-of-evaluation is not completely specified.</p>
+
+<p>Here we begin with idioms that the analysis does and does not
+permit. With a basic sense of the idea, we expect programmers can
+generally not worry about the exact rules of the analysis. However,
+when the compiler rejects code because memory may be uninitialized,
+the programmer needs to know how to rewrite the code in order to pass
+the analysis. For this reason, we also give a more complete
+description of the rules.</p>
+
+<p>We begin with examples not involving pointers. If you are familiar
+with Java&#8217;s definite assignment, you can skip this part, but note that
+struct and tuple fields are tracked separately. So you can use an
+initialized field before another field of the same object is
+initialized. (Java does not allow separate allocation and
+initialization of object fields. Rather, it inserts null or 0 for
+you.)</p>
+
+<p>Finally, we do allow uninitialized numeric values to be
+accessed. Doing so is dangerous and error-prone, but does not
+compromise type safety, so we allow it.</p>
+
+<p>The following code is accepted:</p>
+
+<pre><code>  extern int maybe();
+  int f() {
+    int *x, *y, *z;
+    if(maybe())
+      x = new 3;
+    else
+      x = new 4;
+    while(1) {
+      y = x;
+      break;
+    }
+    if(z = new maybe() &amp;&amp; maybe() &amp;&amp; q = new maybe())
+      return q;
+    else
+      return z;
+  }
+</code></pre>
+
+<p>In short, the analysis checks that every control-flow path between a
+variable&#8217;s declaration and use includes an assignment to the
+variable. More generally, the analysis works on memory locations, not
+just variables. The analysis knows that loop bodies and conditional
+branches are only executed if the value of certain expressions are 0
+or not 0.</p>
+
+<p>The following code is safe, but is not accepted:</p>
+
+<pre><code>  extern int maybe();
+  int f() {
+    int * x = new 1;
+    int * y;
+    int b = maybe();
+    if(b)
+      y = 2;
+    if(b)
+     return y;
+   return 0;
+  }
+</code></pre>
+
+<p>The problem is that the analysis does not know that the second
+if-guard is true only if the first one is. General support for such
+&#8220;data correlation&#8221; would require reasoning about two different
+expressions at different times evaluating to the same value.</p>
+
+<p>Unlike Java, Cyclone supports pointers to uninitialized memory. The
+following code is accepted:</p>
+
+<pre><code>  extern int maybe();
+  int f() {
+    int * x;
+    int * z;
+    int ** y;
+    if(maybe()) {
+      x = new 3;
+      y = &amp;x;
+    } else {
+      y = &amp;z;
+      z = new 3;
+    }
+    return *y;
+  }
+</code></pre>
+
+<p>The analysis does not know which branch of the if will be taken, so
+after the conditional it knows that either &#8220;x is initialized and y
+points to x&#8221; or &#8220;z is initialized and y points to z.&#8221; It merges this
+information to &#8220;y points to somewhere initialized,&#8221; so the function
+returns an initialized value, as required. (It is safe to return
+uninitialized ints, but we reject such programs anyway.)</p>
+
+<p>However, this code is rejected even though it is safe:</p>
+
+<pre><code>  extern int maybe();
+  int f() {
+    int * x;
+    int * z;
+    int ** y;
+    if(maybe()) {
+      y = &amp;x;
+    } else {
+      y = &amp;z;
+    }
+    x = new 3;
+    z = new 3;
+    return *y;
+  }
+</code></pre>
+
+<p>The problem is that the analysis loses too much information after the
+conditional. Because y may allow (in fact, does allow) access to
+uninitialized memory and the analysis does not know exactly where y
+points, the conditional is rejected.</p>
+
+<p>A compelling use of pointers to uninitialized memory is porting C code
+that uses malloc, such as the following (the cast is not necessary in
+Cyclone):</p>
+
+<pre><code>  struct IntPair { int x; int y; };
+  struct IntPair * same(int z) {
+    struct IntPair * ans =
+          (struct IntPair *)malloc(sizeof(struct IntPair));
+    ans-&gt;x = z;
+    ans-&gt;y = z;
+    return ans;
+  }
+</code></pre>
+
+<p>There is limited support for passing a pointer to uninitialized memory
+to a function that initializes it. See <a href='/wiki/Interprocedural Memory Initialization'>Interprocedural Memory Initialization</a>.</p>
+
+<p>Certain expression forms require their arguments to be fully
+initialized (that is, everything reachable from the expression must be
+initialized) even though the memory is not all immediately used. These
+forms are the expression in &#8220;let p = e&#8221; and the argument to switch. We
+hope to relax these restrictions in the future.</p>
+
+<p>You should now know enough to program effectively in Cyclone without
+immediately initializing all memory. For those wanting a more complete
+view of the language definition (i.e., what the analysis does and does
+not accept), we now go into the details. Note that the analysis is
+sound and well-specified&#8211;there is never a reason that the compiler
+rejects your program for unexplainable reasons.</p>
+
+<p>For each local variable and for each program point that allocates
+memory, the analysis tracks information about each field. We call each
+such field a place. For example, in this code:</p>
+
+<pre><code>  struct B { int * x; $(int*,int*) y;};
+  void f() {
+    struct B b;
+    struct B * bp = malloc(sizeof(B));
+    ...
+  }
+</code></pre>
+
+<p>the places are b.x, b.y[0], b.y[1], bp, <code>&lt;1&gt;</code>.x, <code>&lt;1&gt;</code>.y[0], and <code>&lt;1&gt;</code>.y[1]
+where we use <code>&lt;1&gt;</code> to stand for the malloc expression (a program point
+that does allocation). An initialization state can be &#8220;<em>must point to
+P</em>&#8221; where P is a path. For example, after the second declaration
+above, we have &#8220;bp must point to <code>&lt;1&gt;</code>.&#8221; An ensuing assignment of the
+form &#8220;bp->x = new 3&#8221; would therefore change the initialization state
+of <code>&lt;1&gt;</code>.x. If there is not a unique path to which a place definitely
+points, then we keep track of the place&#8217;s <em>initialization level</em> and
+<em>escapedness</em>. A place is escaped if we do not know exactly all of the
+places that must point to it. For example, both of the following
+fragments would cause all the places starting with <code>&lt;1&gt;</code> to be escaped
+afterwards (assuming bp must point to <code>&lt;1&gt;</code>):</p>
+
+<pre><code>  struct B * bp2;                some_fun(bp);
+  if(maybe())
+     bp2 = bp;
+</code></pre>
+
+<p>Note that if &#8220;p must point to P,&#8221; then p is implicitly unescaped
+because we cannot know that p points to P if we don&#8217;t know all the
+pointers to p. The initialization level is either None or All. All
+means p and everying reachable from p (following as many pointers as
+you want) is initialized.</p>
+
+<p>Note that our choice of tracking &#8220;must point to&#8221; instead of &#8220;must
+alias&#8221; forces us to reject some safe programs, such as this one:</p>
+
+<pre><code>  int f() {
+    int * x, int *y;
+    int **p1;
+    if(maybe())
+     p1 = &amp;x;
+    else
+     p1 = &amp;y;
+    *p1 = new 7;
+    return *p1;
+  }
+</code></pre>
+
+<p>Even though p1 has not escaped, our analysis must give it
+initialization-level None. Moreover, x and y escape before they are
+initialized, so the conditional is rejected.</p>
+
+<p>For safety reasons, once a place is escaped, any assignment to it must
+be a value that is fully initialized, meaning everything reachable
+from the value is initialized. This phenomenon is why the first
+function below is accepted but not the second (the list_t typedefs is
+defined in the List library):</p>
+
+<pre><code>  list_t&lt;`a,`H&gt; copy(list_t&lt;`a&gt; x) {
+    struct List *@notnull result, *@notnull prev;
+
+    if (x == NULL) return NULL;
+    result = new List{.hd=x-&gt;hd,.tl=NULL};
+    prev = result;
+    for (x=x-&gt;tl; x != NULL; x=x-&gt;tl) {
+      struct List *@notnull temp = malloc(sizeof(struct List));
+      temp-&gt;hd = x-&gt;hd;
+      temp-&gt;tl = NULL;
+      prev-&gt;tl = temp;
+      prev = temp;
+    }
+    return result;
+  }
+
+  list_t&lt;`a,`r2&gt; rcopy(region_t&lt;`r2&gt; r2, list_t&lt;`a&gt; x) {
+    struct List *@notnull result, *@notnull prev;
+
+    if (x == NULL) return NULL;
+    result = rnew(r2) List{.hd=x-&gt;hd,.tl=NULL};
+    prev = result;
+    for (x=x-&gt;tl; x != NULL; x=x-&gt;tl) {
+      prev-&gt;tl = malloc(sizeof(struct List));
+      prev-&gt;tl-&gt;hd = x-&gt;hd;
+      prev-&gt;tl-&gt;tl = NULL;
+      prev = prev-&gt;tl;
+    }
+    return result;
+  }
+</code></pre>
+
+<p>In the for body, we do not know where prev must point (on the first
+loop iteration it points to the first malloc site, but on ensuing
+iterations it points to the second). Hence prev->tl may be assigned
+only fully initialized objects.</p>
+</div>
+</body>
+</html>

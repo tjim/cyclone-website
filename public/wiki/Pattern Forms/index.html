@@ -1,0 +1,203 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Pattern Forms</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Pattern Forms</h2>
+
+<p>This page describes all the forms that patterns can take in Cyclone.
+For each pattern form, you need to know:</p>
+
+<ul>
+<li>The syntax </li>
+<li>The types of expressions it can match against (to avoid a
+compile-time error)</li>
+<li>The expressions the pattern matches against (other expressions
+cause a match failure)</li>
+<li>The bindings the pattern introduces, if any. </li>
+</ul>
+
+<p>There is one compile-time rule that is the same for all forms: All
+variables (and type variables) in a pattern must be distinct. For
+example, &#8220;let Pair(fst,fst) = pr;&#8221; is not allowed.</p>
+
+<p>You may want to read the descriptions for variable and struct patterns
+first because we have already explained their use informally.</p>
+
+<ul>
+<li><p><strong>Variable patterns</strong></p>
+
+<ul>
+<li>Syntax: an identifer </li>
+<li>Types for match: all types </li>
+<li>Expressions matched: all expressions </li>
+<li>Bindings introduced: the identifier is bound to the expression
+being matched</li>
+</ul></li>
+<li><p><strong>Wildcard patterns</strong></p>
+
+<ul>
+<li>Syntax: _ (underscore, note this use is completely independent
+of _ for [type inference][13])</li>
+<li>Type for match: all types </li>
+<li>Expressions matched: all expressions </li>
+<li>Bindings introduced: none. Hence it is like a variable pattern
+that uses a fresh identifier. Using _ is better style because it
+indicates the value matched is not used. Notice that &#8220;let _ =
+e;&#8221; is equivalent to e.</li>
+</ul></li>
+<li><p><strong>As patterns</strong></p>
+
+<ul>
+<li>Syntax: x as p where x is an identifier and p is a pattern. </li>
+<li>Types for match: all types </li>
+<li>Expressions matched: all expressions </li>
+<li>Bindings introduced: if the expression matches the pattern p,
+then its value is bound to x. Thus, a variable pattern is simply
+shorthand for &#8220;x as _&#8221;.</li>
+</ul></li>
+<li><p><strong>Reference patterns</strong></p>
+
+<ul>
+<li>Syntax: *x (i.e., the * character followed by an identifier) </li>
+<li>Types for match: all types </li>
+<li>Expressions matched: all expressions. (Very subtle notes:
+Currently, reference patterns may only appear inside of other
+patterns so that the compiler can determine the region for the
+pointer type assigned to x. They also may not occur under a
+datatype pattern that has existential types unless there is a
+pointer pattern in-between.)</li>
+<li>Bindings introduced: x is bound to <em>the address of</em> the
+expression being matched. Hence if matched against a value of
+type t in region <code>r, the type of x is t@</code>r.</li>
+</ul></li>
+<li><p><strong>Numeric constant patterns</strong></p>
+
+<ul>
+<li>Syntax: An int, char, or float constant </li>
+<li>Types for match: numeric types </li>
+<li>Expressions matched: numeric values such that == applied to the
+value and the pattern yields true. (Standard C numeric
+promotions apply. Note that comparing floating point values for
+equality is usually a bad idea.)</li>
+<li>Bindings introduced: none </li>
+</ul></li>
+<li><p><strong>NULL<em>*</strong> constant patterns</em>*</p>
+
+<ul>
+<li>Syntax: NULL</li>
+<li>Types for match: nullable pointer types, including ? types </li>
+<li>Expressions matched: NULL</li>
+<li>Bindings introduced: none </li>
+</ul></li>
+<li><p><strong>Enum patterns</strong></p>
+
+<ul>
+<li>Syntax: an enum constant </li>
+<li>Types for match: the enum type containing the constant </li>
+<li>Expressions matched: the constant </li>
+<li>Bindings introduced: none </li>
+</ul></li>
+<li><p><strong>Tuple patterns</strong></p>
+
+<ul>
+<li><p>Syntax: $(p1,&#8230;,pn[,&#8230;]) where p1,&#8230;,pn are patterns. The
+trailing comma and ellipses (&#8230;) are optional.</p></li>
+<li><p>Types for match: if no ellipses, then tuple types with exactly n
+fields, where pi matches the type of the tuple&#8217;s ith field. If
+the ellipses are present, then matches a tuple with at least n
+fields.</p></li>
+<li>Expressions matched: tuples where the ith field matches pi for i
+between 1 and n.</li>
+<li>Bindings introduced: bindings introduced by p1, &#8230;, pn. </li>
+</ul></li>
+<li><p><strong>Struct patterns</strong></p>
+
+<ul>
+<li><p>Syntax: There are three forms: </p>
+
+<ul>
+<li><p>X(p1,&#8230;,pn[,&#8230;]) where X is the name of a struct with n
+fields and p1,&#8230;,pn are patterns. This syntax is shorthand
+for <code>X{.f1 = p1, ..., .fn = pn [,...]}</code> where fi is the ith
+field in X.</p></li>
+<li><p><code>X{.f1 = p1, ..., .fn = pn [,...]}</code> where the fields of X are
+f1, &#8230;, fn but not necessarily in that order</p></li>
+<li><p><code>{.f1 = p1, ..., .fn = pn [,...]}</code> which is the same as above
+except that struct name X has been omitted.</p></li>
+</ul></li>
+<li><p>Types for match: struct X (or instantiations when struct X is
+polymorphic) such that pi matches the type of fi for i between 1
+and n. If the ellipses are not present, then each member of the
+struct must have a pattern.</p></li>
+<li>Expressions matched: structs where the value in fi matches pi
+for i between 1 and n.</li>
+<li>Bindings introduced: bindings introduced by p1,&#8230;,pn </li>
+</ul></li>
+<li><p><strong>Tagged Union patterns</strong></p>
+
+<ul>
+<li><p>Syntax: There are two forms: </p>
+
+<ul>
+<li><p><code>X{.fi = p}</code> where the members of X are f1, &#8230;, fn and fi is
+one of those members.</p></li>
+<li><p><code>{{.f1 = p</code> which is the same as above except that union name
+X has been omitted.</p></li>
+</ul></li>
+<li><p>Types for match: union X (or instantiations when union X is
+polymorphic) such that p matches the type of fi.</p></li>
+<li>Expressions matched: tagged unions where the last member written
+was fi and the value of that member matches p.</li>
+<li>Bindings introduced: bindings introduced by p. </li>
+</ul></li>
+<li><p><strong>Pointer patterns</strong></p>
+
+<ul>
+<li>Syntax: &amp;p where p is a pattern </li>
+<li>Types for match: pointer types, including ? types. Also datatype
+Foo @ (or instantiations of it) when the pattern is
+&amp;Bar(p1,&#8230;,pn) and Bar is a variant of datatype Foo and pi
+matches the type of the ith value carried by Bar.</li>
+<li>Expressions matched: non-null pointers where the value pointed
+to matches p. Note this explanation includes the case where the
+expression has type datatype Foo @ and the pattern is
+&amp;Bar(p1,&#8230;,pn) and the current variant of the expression is
+&#8220;pointer to Bar&#8221;.</li>
+<li>Bindings introduced: bindings introduced by p </li>
+</ul></li>
+<li><p><strong>Datatype patterns</strong></p>
+
+<ul>
+<li>Syntax: X if X is a variant that carries no values. Else
+X(p1,&#8230;,pn[,&#8230;]) where X is the name of a variant and p1, &#8230;,
+pn are patterns. As with tuple and struct patterns, the ellipses
+are optional.</li>
+<li>Types for match: datatype Foo (or instantiations of it). </li>
+<li>Expressions matched: If X is non-value-carrying, then X. If X is
+value-carrying, then values created from the constructor X such
+that pi matches the ith field.</li>
+<li>Bindings introduced: bindings introduced by p1,&#8230;,pn </li>
+</ul></li>
+</ul>
+</div>
+</body>
+</html>

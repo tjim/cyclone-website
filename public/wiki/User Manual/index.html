@@ -1,0 +1,150 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: User Manual</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>User Manual</h2>
+
+<h2>Table of Contents</h2>
+<ul>
+<li><p>
+<a href='/wiki/Introduction to Cyclone'>Introduction to Cyclone</a></p></li>
+<li><p><a href='/wiki/Cyclone for C Programmers'>Cyclone for C Programmers</a></p>
+
+<ul>
+<li><a href="/wiki/Cyclone%20for%20C%20Programmers#GettingStarted">Getting Started</a></li>
+<li><a href="/wiki/Cyclone%20for%20C%20Programmers#Pointers">Pointers</a></li>
+<li><a href="/wiki/Cyclone%20for%20C%20Programmers#Regions">Regions</a></li>
+<li><a href="/wiki/Cyclone%20for%20C%20Programmers#Arrays">Arrays</a></li>
+<li><a href="/wiki/Cyclone%20for%20C%20Programmers#Structs">Structs</a></li>
+<li><a href="/wiki/Cyclone%20for%20C%20Programmers#Unions">Unions</a></li>
+<li><a href="/wiki/Cyclone%20for%20C%20Programmers#Additions">C++, GCC and C99 Additions</a></li>
+<li><a href="/wiki/Cyclone%20for%20C%20Programmers#AdditionalFeaturesofCyclone">Additional Features of Cyclone</a></li>
+<li><a href="/wiki/Cyclone%20for%20C%20Programmers#Exceptions">Exceptions</a></li>
+<li><a href="/wiki/Cyclone%20for%20C%20Programmers#LetDeclarationsandPatternMatching">Let Declarations and Pattern Matching</a></li>
+<li><a href="/wiki/Cyclone%20for%20C%20Programmers#Subtyping">Subtyping</a></li>
+<li><a href="/wiki/Cyclone%20for%20C%20Programmers#PolymorphicFunctions">Polymorphic Functions</a></li>
+<li><a href="/wiki/Cyclone%20for%20C%20Programmers#PolymorphicDataStructures">Polymorphic Data Structures</a></li>
+<li><a href="/wiki/Cyclone%20for%20C%20Programmers#Abstract">Abstract and Existential Types</a></li>
+<li><a href="/wiki/Cyclone%20for%20C%20Programmers#Restrictions">Restrictions</a></li>
+</ul></li>
+<li><p><a href='/wiki/Pointers'>Pointers</a></p>
+
+<ul>
+<li><a href='/wiki/Pointer Subtyping'>Pointer Subtyping</a></li>
+<li><a href='/wiki/Pointer Coercions'>Pointer Coercions</a></li>
+<li><a href='/wiki/Default Region Qualifiers'>Default Region Qualifiers</a></li>
+<li><a href='/wiki/Static Expression Bounds'>Static Expression Bounds</a></li>
+</ul></li>
+<li><p><a href='/wiki/Tagged Unions and Datatypes'>Tagged Unions and Datatypes</a></p>
+
+<ul>
+<li><a href='/wiki/Tagged Unions'>Tagged Unions</a></li>
+<li><a href='/wiki/Datatypes'>Datatypes</a></li>
+<li><a href='/wiki/The Tagof Operator'>The Tagof Operator</a></li>
+<li><a href='/wiki/Extensible Datatypes'>Extensible Datatypes</a></li>
+</ul></li>
+<li><p><a href='/wiki/Pattern Matching'>Pattern Matching</a></p>
+
+<ul>
+<li><a href='/wiki/Let Declarations'>Let Declarations</a></li>
+<li><a href='/wiki/Pattern Forms'>Pattern Forms</a></li>
+<li><a href='/wiki/Switch Statements'>Switch Statements</a></li>
+</ul></li>
+<li><p><a href='/wiki/Type Inference'>Type Inference</a></p></li>
+<li><p><a href='/wiki/Polymorphism'>Polymorphism</a></p></li>
+<li><a href='/wiki/Memory%20Management%20Via%20Regions'>Memory Management Via Regions</a>
+
+<ul>
+<li><a href='/wiki/Introduction to Regions'>Introduction to Regions</a></li>
+<li><a href='/wiki/Region Allocation'>Region Allocation</a></li>
+<li><a href='/wiki/Region Common Uses'>Region Common Uses</a></li>
+<li><a href='/wiki/Type-Checking Regions'>Type-Checking Regions</a></li>
+</ul></li>
+<li><p><a href='/wiki/Pointers with Restricted Aliasing'>Pointers with Restricted Aliasing</a></p>
+
+<ul>
+<li><a href="/wiki/Pointers%20with%20Restricted%20Aliasing#Introduction">Introduction</a></li>
+<li><a href="/wiki/Pointers%20with%20Restricted%20Aliasing#AllocationandFreeing">Allocation and Freeing</a></li>
+<li><a href="/wiki/Pointers%20with%20Restricted%20Aliasing#UniquePointers">Unique Pointers</a></li>
+<li><a href="/wiki/Pointers%20with%20Restricted%20Aliasing#Reference-countedPointers">Reference-counted Pointers</a></li>
+<li><a href="/wiki/Pointers%20with%20Restricted%20Aliasing#QualifierPolymorphism">Qualifier Polymorphism</a></li>
+<li><a href="/wiki/Pointers%20with%20Restricted%20Aliasing#AliasingUniquePointers">Aliasing Unique Pointers</a></li>
+<li><a href="/wiki/Pointers%20with%20Restricted%20Aliasing#DynamicRegions">Dynamic Regions</a></li>
+<li><a href="/wiki/Pointers%20with%20Restricted%20Aliasing#DefaultsandShorthands">Defaults and Shorthands</a></li>
+<li><a href="/wiki/Pointers%20with%20Restricted%20Aliasing#SubtypingforEffectQualifierandReaps">Subtyping for Effect Qualifier and Reaps</a></li>
+<li><a href="/wiki/Pointers%20with%20Restricted%20Aliasing#ReapAllocatorImplementation">Reap Allocator Implementation</a></li>
+</ul></li>
+<li><p><a href='/wiki/Namespaces'>Namespaces</a></p></li>
+<li><a href='/wiki/Varargs'>Varargs</a></li>
+<li><p><a href='/wiki/Definite Assignment'>Definite Assignment</a></p></li>
+<li><p>Advanced Features<a name="AdvancedFeatures"></a></p>
+
+<ul>
+<li><a href='/wiki/Existential types'>Existential types</a></li>
+<li><a href='/wiki/The Truth About Effects, Capabilities and Effect Subset Constraints'>The Truth About Effects, Capabilities and Effect Subset Constraints</a></li>
+<li><a href='/wiki/Interprocedural Memory Initialization'>Interprocedural Memory Initialization</a></li>
+</ul></li>
+<li><p>Porting C code to Cyclone</p>
+
+<ul>
+<li><a href='/wiki/Semi-Automatic Porting'>Semi-Automatic Porting</a></li>
+<li><a href='/wiki/Manually Translating C to Cyclone'>Manually Translating C to Cyclone</a></li>
+<li><a href='/wiki/Interfacing to C'>Interfacing to C</a></li>
+</ul></li>
+<li><p><a href='/wiki/Frequently Asked Questions'>Frequently Asked Questions</a></p></li>
+<li><p>Libraries</p>
+
+<ul>
+<li><a href='/wiki/C Libraries'>C Libraries</a></li>
+<li><code>&lt;array.h&gt;</code></li>
+<li><code>&lt;bitvec.h&gt;</code></li>
+<li><code>&lt;buffer.h&gt;</code></li>
+<li><code>&lt;core.h&gt;</code></li>
+<li><code>&lt;dict.h&gt;</code></li>
+<li><code>&lt;filename.h&gt;</code></li>
+<li><code>&lt;fn.h&gt;</code></li>
+<li><code>&lt;graph.h&gt;</code></li>
+<li><code>&lt;hashtable.h&gt;</code></li>
+<li><code>&lt;iter.h&gt;</code></li>
+<li><code>&lt;list.h&gt;</code></li>
+<li><code>&lt;pp.h&gt;</code></li>
+<li><code>&lt;queue.h&gt;</code></li>
+<li><code>&lt;rope.h&gt;</code></li>
+<li><code>&lt;set.h&gt;</code></li>
+<li><code>&lt;slowdict.h&gt;</code></li>
+<li><code>&lt;xarray.h&gt;</code></li>
+</ul></li>
+<li><p><a href='/wiki/Language Summary'>Language Summary</a></p></li>
+<li><p><a href='/wiki/Installing Cyclone'>Installing Cyclone</a></p></li>
+<li><p>Tools</p>
+
+<ul>
+<li><a href='/wiki/The compiler'>The compiler</a></li>
+<li>The lexer generator</li>
+<li>The parser generator</li>
+<li><a href="/wiki/aprof">The allocation profiler, aprof</a></li>
+<li><a href="/wiki/buildlib">The C interface tool, buildlib</a></li>
+</ul></li>
+</ul>
+</div>
+</body>
+</html>

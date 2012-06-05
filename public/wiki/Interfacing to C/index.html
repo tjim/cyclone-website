@@ -1,0 +1,228 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Interfacing to C</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Interfacing to C</h2>
+
+<p>When porting any large code from C to Cyclone, or even when writing a
+Cyclone program from scratch, you&#8217;ll want to be able to access legacy
+libraries. To do so, you must understand how Cyclone represents data
+structures, how it compiles certain features, and how to write
+wrappers to make up for representation mismatches.</p>
+
+<h4>Extern &#8220;C&#8221;</h4>
+
+<p>Sometimes, interfacing to C code is as simple as writing an
+appropriate interface. For instance, if you want to call the acos
+function which is defined in the C Math library, you can simply write
+the following:</p>
+
+<pre><code>  extern "C" double acos(double);
+</code></pre>
+
+<p>The extern &#8220;C&#8221; scope declares that the function is defined externally
+by C code. As such, it&#8217;s name is not prefixed with any namespace
+information by the compiler. Note that you can still embed the
+function within a Cyclone namespace, it&#8217;s just that the namespace is
+ignored by the time you get down to C code. If you have a whole group
+of functions then you can wrap them with a single extern &#8220;C&#8221; { &#8230; },
+as in:</p>
+
+<pre><code>  extern "C" {
+    double acos(double);
+    float  acosf(float);
+    double acosh(double);
+    float  acoshf(float);
+    double asin(double);
+  }
+</code></pre>
+
+<p>You must be careful that the type you declare for the C function is
+its real type. Misdeclaring the type could result in a runtime
+error. Note that you can add Cyclonisms to the type that refine the
+meaning of the original C. For example, you could declare:</p>
+
+<pre><code>  extern "C" int strlen(const char * @notnull str);
+</code></pre>
+
+<p>Here we have refined the type of strlen to require that a non-NULL
+pointer is passed to it. Because this type is
+representation-compatible with the C type (that is, it has the same
+storage requirements and semantics), this is legal. However, the
+following would be incorrect:</p>
+
+<pre><code>  extern "C" int strlen(const char * @fat str);
+</code></pre>
+
+<p>Giving the function this type would probably lead to an error because
+Cyclone fat pointers are represented as three words, but the standard
+C library function expects a single pointer (one word).</p>
+
+<p>The extern &#8220;C&#8221; approach works well enough that it covers many of the
+cases that you&#8217;ll encounter. However, the situation is not so when you
+run into more complicated interfaces. Sometimes you will need to write
+some wrapper code to convert from Cyclone&#8217;s representations to C&#8217;s and
+back (so called <em>wrapper</em> code).</p>
+
+<h4>Extern &#8220;C include&#8221;</h4>
+
+<p>Another useful tool is the extern &#8220;C include&#8221; mechanism. It allows you
+to write C definitions within a Cyclone file. Here is a simple
+example:</p>
+
+<pre><code>extern "C include" {
+  char peek(unsigned int i) {
+    return *((char *)i);
+  }
+
+  void poke(unsigned int i, char c) {
+    *((char *)i) = c;
+  }
+} export {
+  peek, poke;
+}
+</code></pre>
+
+<p>In this example, we&#8217;ve defined two C functions peek and poke. Cyclone
+will not compile or type-check their code, but rather pass them on to
+the C compiler. The export clause indicates which function and
+variable definitions should be exported to the Cyclone code. If we
+only wanted to export the peek function, then we would leave the poke
+function out of the export list. All all other definitions, like
+typedefs, structs, etc., not to mention #defines and other
+preprocessor effects, are exported by default (but this may change in
+a later release).</p>
+
+<p>Any top-level types you mention in the extern &#8220;C include&#8221; are
+interpreted by the Cyclone code that uses them as Cyclone types. If
+they are actually C types (as would be the case if you #included some
+header in the C block), this will be safe, but possibly undesirable,
+since they may not communicate the right information to the Cyclone
+code. There are two ways around this. In many cases, you can actually
+declare Cyclone types within the C code, and they will be treated as
+such. For example, in lib/core.cyc, we have For example, you could do
+something like:</p>
+
+<pre><code>extern "C include" {
+  ... Cyc_Core_mkthin(`a ?`r dyn, sizeof_t&lt;`a&gt; sz) {
+    unsigned bd = _get_dyneither_size(dyn,sz);
+    return Cyc_Core_mktuple(dyn.curr,bd);
+  } 
+} export {
+  Cyc_Core_mkthin
+}
+</code></pre>
+
+<p>In this case, we are able to include a ? notation directly in the C
+type, but then manipulate it using the runtime system functions for
+fat pointers (see cyc_include.h for details).</p>
+
+<p>In the case that you are including a C header file, you may not be
+able to change its definitions to have a proper Cyclone type, or it
+may be that the Cyclone definitions will not parse for some reason. In
+this case, you can declare a block to <em>override</em> the definitions with
+Cyclone compatible versions. For example, we could change the above
+code to be instead:</p>
+
+<pre><code>extern "C include" {
+  struct foo { int x; int y; };
+  struct foo *cast_charbuf(char *buf, unsigned int n) {
+    if (n &gt;= sizeof(struct foo))
+      return (struct foo *)buf;
+    else
+      return (void *)0;
+  }
+} cyclone_override {
+  struct foo *cast_charbuf
+    (char * @numelts(valueof(`n)) @nozeroterm buf,tag_t&lt;`n&gt; n);
+} export {
+  cast_charbuf
+}
+</code></pre>
+
+<p>Now we have given cast_charbuf its original C type, but then provided
+the Cyclone type in the override block. The Cyclone type ensures the
+value of n correctly represents the length of the buffer, by using
+Cyclone&#8217;s dependent types. Note that top-level struct and other type
+definitions can basically be entirely Cyclone syntax. If you try to
+declare a Cyclone overriding type that is representation-incompatible
+with the C version, the compiler will complain.</p>
+
+<p>Here is a another example using an external header: </p>
+
+<pre><code>extern "C include" {  /* tell Cyclone that &lt;pcre.h&gt; is C code */
+#include &lt;pcre/pcre.h&gt;
+} cyclone_override {
+  pcre *`U pcre_compile(const char @pattern, int options,
+                        const char *`H *errptr, int *erroffset,
+                        const unsigned char *tableptr);
+  int pcre_exec(const pcre @code, const pcre_extra *extra, 
+                const char *subject, int length,
+                int startoffset, int options,
+                int *ovector, int ovecsize);
+} export { pcre_compile, pcre_exec; }
+</code></pre>
+
+<p>In this case, we have included the Perl regular expression library C
+header, and then exported two of its functions, pcre<em>compile and
+pcre</em>exec. Moreover, we have given these functions Cyclone types that
+are more expressive in the original C. Probably we would yet want to
+write wrappers around these functions to check other invariants of the
+arguments (e.g., that the length passed to pcre_exec is indeed the
+length of the subject). Take a look at tests/pcredemo.cyc for more
+information on this example. Another example that shows how you can
+override things is in tests/cinclude.cyc.</p>
+
+<p>The goal of this example is to show how you can safely suck in a large
+C interface (in this case, the Perl Compatible Regular Expression
+interface), write wrappers around some of the functions to convert
+represenations and check properties, and then safely export these
+wrappers to Cyclone.</p>
+
+<p>One word of warning: when you #include something within an extern &#8220;C
+include&#8221;, it will follow the normal include path, which is to say that
+it will look for <em>Cyclone</em> versions of the headers first. This means
+that if you do something like:</p>
+
+<pre><code>extern "C include" {
+#include &lt;string.h&gt;
+} export { ... }
+</code></pre>
+
+<p>It will actually include the Cyclone version of the string.h header!
+These easiest way around this is to use an absolute path, as in</p>
+
+<pre><code>extern "C include" {
+#include "/usr/include/string.h"
+} export { ... }
+</code></pre>
+
+<p>Even worse is when a C header you wish to include itself includes a
+header for which there exists a Cyclone version. In the pcre.h example
+above, this actually occurs in that pcre.h includes stdlib.h, and gets
+the Cyclone version. To avoid this, the pcredemo.cyc program includes
+the Cyclone versions of these headers first. Ultimately we will
+probably change the compiler so that header processing within extern
+&#8220;C include&#8221; searches the C header path but not the Cyclone one.</p>
+</div>
+</body>
+</html>

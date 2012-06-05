@@ -1,0 +1,221 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: The compiler</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>The compiler</h2>
+
+<p>You can use the compiler in much the same way as gcc.  To compile
+a file foo.cyc that includes a <code>main()</code> function,</p>
+
+<pre><code>cyclone foo.cyc
+</code></pre>
+
+<p>This will compile and link the Cyclone file foo.cyc,
+and produce an executable file, <code>a.out</code>.  If you want to give
+the executable a different name, use the <code>-o</code> option:</p>
+
+<pre><code>cyclone -o foo foo.cyc
+</code></pre>
+
+<p>Here, the executable will be named <code>foo</code> instead of <code>a.out</code>.</p>
+
+<p>If you want to compile a Cyclone file that does not include
+a <code>main()</code> funcion, use the <code>-c</code> flag:</p>
+
+<pre><code>cyclone -c bar.cyc
+</code></pre>
+
+<p>This will compile bar.cyc to the object file <code>bar.o</code>.  No
+linking is done.  Link a bunch of object files like this:</p>
+
+<pre><code>cyclone -o foo foo.o bar.o
+</code></pre>
+
+<p>The compiler has a host of other options, which you can view
+using the <code>-usage</code> flag:</p>
+
+<pre><code>cyclone -usage
+</code></pre>
+
+<p>The options as of this writing are</p>
+
+<pre><code>-v          print compilation stages verbosely
+--version   Print version information and exit
+-o &lt;file&gt;   Set the output file name to &lt;file&gt;
+-D&lt;name&gt;[=&lt;value&gt;]
+            Pass definition to preprocessor
+-B&lt;file&gt;    Add to the list of directories to search for compiler files
+-I&lt;dir&gt;     Add to the list of directories to search for include files
+-L&lt;dir&gt;     Add to the list of directories for -l
+-l&lt;libname&gt; Library file
+-m&lt;option&gt;  GCC specific: pass machine-dependent flag on to gcc
+-c          Produce an object file instead of an executable; do not
+            link
+-x &lt;language&gt;
+            Specify &lt;language&gt; for the following input files
+-pa         Compile for profiling with aprof
+-S          Stop after producing assembly code
+-M          Produce dependencies
+-MG         When producing dependencies assume that missing files are
+            generated
+-MT &lt;target&gt;
+            Give target for dependencies
+-b&lt;machine&gt; Set target machine
+-Wlose-unique
+            Try to warn when a unique pointer might get lost
+-Woverride  Warn when a local variable overrides an existing variable
+-Wall       Turn on all warnings
+-E          Stop after preprocessing
+-stopafter-parse
+            Stop after parsing
+-stopafter-tc
+            Stop after type checking
+-noprint    Do not print output (when stopping early)
+-stopafter-cf
+            Stop after control-flow checking
+-stopafter-toc
+            Stop after translation to C
+-ic         Activate the link-checker
+-pp         Pretty print the C code that Cyclone generates
+-up         Ugly print the C code that Cyclone generates (default)
+-elim-statement-expressions
+            Avoid statement expressions in C output (implies
+            --inline-checks)
+-no-elim-statement-expressions
+            Do not avoid statement expressions in C output
+-un-gcc     Avoid gcc extensions in C output (except for attributes)
+-c-comp &lt;compiler&gt;
+            Produce C output for the given compiler
+-save-temps Don't delete temporary files
+-save-c     Don't delete temporary C files
+--nolineno  Don't generate line numbers for debugging (automatic with
+            -pp)
+--nochecks  Disable bounds/null checks
+--nonullchecks
+            Disable null checks
+--noboundschecks
+            Disable bounds checks
+-use-cpp&lt;path&gt;
+            Indicate which preprocessor to use
+-no-cpp-precomp
+            Don't do smart preprocessing (mac only)
+-nocyc      Don't add implicit namespace Cyc
+-nogc       Don't link in the garbage collector
+-noremoveunused
+            Don't remove externed variables that aren't used
+-noexpandtypedefs
+            Don't expand typedefs in pretty printing
+-printalltvars
+            Print all type variables (even implicit default effects)
+-printallkinds
+            Always print kinds of type variables
+-printfullevars
+            Print full information for evars (type debugging)
+-printalleffects
+            Print effects for functions (type debugging)
+-nocyc_setjmp
+            Do not use compiler special file cyc_setjmp.h
+-compile-for-boot
+            Compile using the special boot library instead of the
+            standard library
+-CI &lt;file&gt;  Set cyc_include.h to be &lt;file&gt;
+-warnboundschecks
+            Warn when bounds checks can't be eliminated
+-warnnullchecks
+            Warn when any null check can't be eliminated
+-warnaliascoercion
+            Warn when any alias coercion is inserted
+-warnregioncoerce
+            Warn when any region coercion is inserted
+-noregister Treat register storage class as public
+-detailedlocation
+            Try to give more detailed location information for errors
+-port       Suggest how to port C code to Cyclone
+-noregions  Generate code that doesn't use regions
+-iprefix&lt;prefix&gt;
+            Specify &lt;prefix&gt; as the prefix for subsequent -iwithprefix
+            options
+-iwithprefix&lt;dir&gt;
+            Add &lt;prefix&gt;/&lt;dir&gt; to the second include path.
+-iwithprefixbefore&lt;dir&gt;
+            Add &lt;prefix&gt;/&lt;dir&gt; to the main include path.
+-isystem&lt;dir&gt;
+            Add &lt;dir&gt; to the beginning of the second include path and
+            treat it as a
+system directory.
+-idirafter&lt;dir&gt;
+            Add the directory to the second include path.
+--geninterface
+            Generate interface files
+--interface &lt;file&gt;
+            Set the interface file to be &lt;file&gt;.
+--manyerrors
+            don't stop after only a few errors.
+--parsestate
+            print the parse state and token on a syntax error
+-known-gcc-flags-only
+            do not assume that unknown flags should be passed to gcc
+-help       print out the available options
+-usage      print out the available options
+-no-seq-c   Do not force left-to-right evaluation order of generated
+            code (unsafe)
+-pg         Compile for profiling with gprof
+--novcgen   do not compute verification-conditions
+--cifc-inst-tvar
+            instantiate type variables instead of introducing new ones
+-stopafter-crgn
+            Stop after currrgn
+--allpaths  analyze all forward paths in verification-condition
+            generator
+--mergepaths
+            merge paths at join-points within the
+            verification-condition generator
+-noreaps    Generate code that doesn't use reaps
+--unprovable
+            print assertions that were unprovable
+--max_vc_summary
+            controls the maximum size of post-conditions inlined by
+            vcgen
+--max_vc_paths
+            controls the maximum number of paths explored by constraint
+            solver
+--inf       Use interprocedural type inference
+--nomerge   Do not merge multiple files into one
+--resolve   Resolve constraint variables
+--ovfat     Override '?' annotations in the source with constraint
+            variables
+--infstats  Dump statistics for the result of inference -- reads
+            &lt;pfx&gt;/.cych/cvars
+--tags      Generate a TAGS file for use with interprocedural type
+            inference
+--max_vc_term_size
+            controls the maximum size of terms considered by the
+            constraint solver
+--warnassert
+            Warn when an assert might fail at run-time
+-infpfx &lt;dir&gt;
+            Give a directory within which inference temporary files
+            will be stored.
+</code></pre>
+</div>
+</body>
+</html>

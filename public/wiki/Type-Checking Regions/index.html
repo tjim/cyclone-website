@@ -1,0 +1,233 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Type-Checking Regions</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Type-Checking Regions</h2>
+
+<p>Because of recursive functions, there can be any number of live
+regions at run time. The compiler uses the following general strategy
+to ensure that only pointers into live regions are dereferenced:</p>
+
+<ul>
+<li>Use compile-time <em>region names</em>. Syntactically these are just type
+variables, but they are used differently.</li>
+<li>Decorate each pointer type and handle type with one or more region
+names.</li>
+<li>Decorate each program point with a (finite) set of region
+names. We call the set the point&#8217;s <em>capability</em>.</li>
+<li>To dereference a pointer (via <code>*</code>, ->, or subscript), each region
+name that appears in the pointer&#8217;s type name must be in the
+program point&#8217;s capability. Similarly, to use a handle for
+allocation, the handle type&#8217;s region name must be in the
+capability.</li>
+<li>Enforce a type system such that the following is impossible: A
+program point P&#8217;s capability contains a region name <code>`r</code> that
+decorates a pointer (or handle) expression <em>expr</em> that, at run
+time, points into a region that has been deallocated and the
+operation at P dereferences <em>expr</em>.</li>
+</ul>
+
+<p>This strategy is probably too vague to make sense at this point, but
+it may help to refer back to it as we explain specific aspects of the
+type system.</p>
+
+<p>Note that in the rest of the documentation (and in common parlance) we
+abuse the word &#8220;region&#8221; to refer both to region names and to run-time
+collections of objects. Similarly, we confuse a block of declarations,
+its region-name, and the run-time space allocated for the block. (With
+loops and recursive functions, &#8220;the space allocated&#8221; for the block is
+really any number of distinct regions.) But in the rest of this
+section, we painstakingly distinguish region names, regions, etc.</p>
+
+<h4>Region Names</h4>
+
+<p>Given a function, we associate a distinct region name with each
+program point that creates a region, as follows:</p>
+
+<ul>
+<li>If a block (blocks create stack regions) has label L, then the
+region-name for the block is <code>`L</code>.</li>
+<li>If a block has no label, the compiler makes up a fresh region-name
+for the block.</li>
+<li>In region r &lt;<code>`foo</code>> <em>s</em>, the region-name for the construct is <code>`foo</code>.</li>
+<li>In region r <em>s</em>, the region-name for the construct is <code>`r</code>. </li>
+<li>In region h = open(k) s, the region-name for the construct is <code>`r</code>,
+assuming k has type <code>region_key_t&lt;`r,_&gt;</code> (where _ is some other
+region name of no consequence).</li>
+</ul>
+
+<p>The region name for the heap is <code>`H</code>. Region names associated with
+program points within a function should be distinct from each other,
+distinct from any region names appearing in the function&#8217;s prototype,
+and should not be <code>`H</code>. (So you cannot use H as a label name, for
+example.) Because the function&#8217;s return type cannot mention a region
+name for a block or region-construct in the function, it is impossible
+to return a pointer to deallocated storage.</p>
+
+<p>In <code>region r &lt;`r&gt; s</code>, <code>region r s</code>, and <code>region r = open(k) s</code>
+the type of r is <code>region_t&lt;`r&gt;</code> (assuming, that k has type
+<code>region_key_t&lt;`r,_&gt;</code>). In other words, the handle is decorated with the
+region name for the construct. Pointer types&#8217; region names are
+explicit, although you generally rely on inference to put in the
+correct one for you.</p>
+
+<h4>Capabilities</h4>
+
+<p>In the absence of explicit effects (see below), the capability for a
+program point includes exactly:</p>
+
+<ul>
+<li><code>`H</code></li>
+<li>The effect corresponding to the function&#8217;s prototype. Briefly, any
+region name in the prototype (or inserted by the compiler due to
+an omission) is in the corresponding effect. Furthermore, for each
+type variable <code>`a</code> that appears (or is inserted), &#8220;regions(<code>`a</code>)&#8221; is
+in the corresponding effect. This latter effect roughly means, &#8220;I
+don&#8217;t know what <code>`a</code> is, but if you instantiate with a type
+mentioning some regions, then add those regions to the effect of
+the instantiated prototype.&#8221; This is necessary for safely
+type-checking calls that include function pointers.</li>
+<li>The region names for the blocks and &#8220;region r s&#8221; statements that
+contain the program point</li>
+</ul>
+
+<p>For each dereference or allocation operation, we simply check that the
+region name for the type of the object is in the capability. It takes
+extremely tricky code (such as existential region names) to make the
+check fail.</p>
+
+<h4>Type Declarations</h4>
+
+<p>Each pointer and region handle type is decorated with a set of region
+names. This set of region names is referred to as the store or effect
+qualifier of a type. For instance a pointer type might be
+<code>int *`r+`H</code>. This indicates the type of pointer to an integer that resides
+in the region named <code>`r</code> or the heap region, <code>`H</code>. Similarly, a region
+handle type might be <code>region_t&lt;`r1+`r2&gt;</code> which indicates a handle to
+region named <code>`r1</code> or <code>`r2</code>.</p>
+
+<p>A struct, typedef, or datatype declaration may be parameterized by any number of effect qualifiers. The store qualifiers are placed in the list of type parameters. They may be followed by their kind; i.e. &#8220;::E&#8221;. For example, given </p>
+
+<pre><code>  struct List&lt;`a,`r&gt;{`a hd; struct List&lt;`a,`r&gt; *`r tl;};
+</code></pre>
+
+<p>the type <code>struct List&lt;int,`H&gt;</code> is for a list of ints in the heap,
+while the type <code>struct List&lt;int,`l&gt;</code> is for a list of ints in some
+lexical region. Notice that all of the &#8220;cons cells&#8221; of the List will
+be in the same region (the type of the tl field uses the same region
+name <code>`r</code> that is used to instantiate the recursive instance of
+<code>struct List&lt;`a,`r&gt;)</code>. However, we could instantiate <code>`a</code>
+with a pointer type that has a different region name.</p>
+
+<h4>Subtyping and Effect Qualifiers</h4>
+
+<p>A pointer type&#8217;s effect qualifier is part of the type. If e1 and e2
+are pointers, then e1 = e2 is well-typed only if all the regions names
+mentioned in the the effect qualifier for e2&#8217;s type also appears in
+the effect qualifier of e1&#8217;s type. For instance, both assignments to b
+below are legal, while the assignment to a is not.</p>
+
+<pre><code>  void foo(int *`r a) {
+    int *`r+`H b = a;
+    if(!a) b = new 1;
+    a = b;
+  }
+</code></pre>
+
+<p>The store qualifier in the type of b indicates that it can point into
+the region named <code>`r</code> or into the heap region. Therefore, initializing b
+with a pointer into <code>`r</code> is certainly consistent with its store
+qualifier. Similarly, the second assignment to b is legal since it is
+updated to point to the heap region. However, the assignment to a is
+not permitted since the declared type of a claims that it is pointer
+into the region named <code>`r</code> alone and b may actually point to the heap.</p>
+
+<p>For handles, if <code>`r</code> is a region name, there is at most one value
+of type <code>region_t&lt;`r&gt;</code> (there are 0 if <code>`r</code> is a block&#8217;s name), so
+there is little use in creating variables of type
+<code>region_t&lt;`r&gt;</code>. However, it could be useful to create variables of type
+<code>region_t&lt;`r1+`r2&gt;</code>. This is the type of handle to either the region
+named <code>`r1</code> or to the region named <code>`r2</code>. This is illustrated by the
+following code:</p>
+
+<pre><code>  void foo(int a, region_t&lt;`r&gt; h) {
+    region_t&lt;`r+`H&gt; rh = h;
+    if(a) {
+      rh = heap_region;
+    }
+  }
+</code></pre>
+
+<p>As always, this form of subtyping for effect qualifiers is not
+permitted under a reference. Thus, the assignment in the program below
+is not legal.</p>
+
+<pre><code>  void foo(int *`H *`r a) {
+    int *`r+`H *`r b = a;
+  }
+</code></pre>
+
+<p>Instead of the shorthand <code>int *`r1+`r2</code> the more verbose <code>int *@effect(`r1 + `r2)</code> may 
+also be used. The <code>@effect</code> qualifier can be used in place of the <code>@region</code> qualifier.</p>
+
+<h4>Function Calls</h4>
+
+<p>If a function parameter or result has type <code>int *`r</code> or
+<code>region_t&lt;`r&gt;</code>, the function is polymorphic over the region name
+<code>`r</code>. That is, the caller can instantiate `r with any region <em>in the
+caller&#8217;s current capability</em> as long as the region has the correct
+kind. This instantiation is usually implicit, so the caller just calls
+the function and the compiler uses the types of the actual arguments
+to infer the instantiation of the region names (just like it infers
+the instantiation of type variables).</p>
+
+<p>The callee is checked knowing nothing about <code>`r</code> except that it is
+in its capability (plus whatever can be determined from explicit
+outlives assumptions), and that it has the given kind. For example, it
+will be impossible to assign a parameter of type <code>int*`r</code> to a
+global variable. Why? Because the global would have to have a type
+that allowed it to point into any region. There is no such type
+because we could never safely follow such a pointer (since it could
+point into a deallocated region).</p>
+
+<h4>Explicit and Default Effects</h4>
+
+<p>If you are not using existential types, you now know everything you
+need to know about Cyclone regions and memory management. Even if you
+are using these types and functions over them (such as the closure
+library in the Cyclone library), you probably don&#8217;t need to know much
+more than &#8220;provide a region that the hidden types outlive&#8221;.</p>
+
+<p>The problem with existential types is that when you &#8220;unpack&#8221; the type,
+you no longer know that the regions into which the fields point are
+allocated. We are sound because the corresponding region names are not
+in the capability, but this makes the fields unusable. To make them
+usable, we do not hide the capability needed to use them. Instead, we
+use a <em>region bound</em> that is not existentially bound.</p>
+
+<p>If the contents of existential packages contain only heap pointers,
+then `H is a fine choice for a region bound.</p>
+
+<p>These issues are discussed in <a href='/wiki/User%20Manual#AdvancedFeatures'>Advanced Features</a>.</p>
+</div>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Type Inference</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Type Inference</h2>
+
+<p>Cyclone allows many explicit types to be elided. In short, you write _
+(underscore) where a type should be and the compiler tries to figure
+out the type for you. Type inference can make C-like Cyclone code
+easier to write and more readable. For example,</p>
+
+<pre><code>  _ x = malloc(sizeof(sometype_t));
+</code></pre>
+
+<p>is a fine substitute for </p>
+
+<pre><code>  sometype_t * x = malloc(sizeof(sometype_t));
+</code></pre>
+
+<p>Of course, explicit types can make code more readable, so it is often
+better style not to use inference.</p>
+
+<p>Inference is even more useful because of Cyclone&#8217;s advanced typing
+constructs. For example, it is much easier to write down _ than a type
+for a function pointer.</p>
+
+<p>We now give a rough idea of when you can elide types and how types get
+inferred. In practice, you tend to develop a sense of which idioms
+succeed, and, if there&#8217;s a strange compiler-error message about a
+variable&#8217;s type, you give more explicit information about the
+variable&#8217;s type.</p>
+
+<h5>Syntax</h5>
+
+<p>As far as the parser is concerned, _ is a legal type
+specifier. However, the type-checker will immediately reject _ in
+these places (or at least it should):</p>
+
+<ul>
+<li>As part of a top-level variable or function&#8217;s type. </li>
+<li>As part of a struct, union, datatype, or typedef declaration. </li>
+</ul>
+
+<p>Note that _ can be used for part of a type. A silly example is
+<code>$(_,int) = $(3,4);</code> a more useful example is an explicit cast to a
+non-nullable pointer (to avoid a compiler warning). For example:</p>
+
+<pre><code>  void f(some_big_type * x, some_big_type @ y) {
+  if(x != NULL) {
+    y = (_ *@notnull) x;
+  }
+</code></pre>
+
+<h5>Semantics</h5>
+
+<p>Except for the subtleties discussed below, using _ should not change
+the meaning of programs. However, it may cause a program not to
+type-check because the compiler no longer has the type information it
+needs at some point in the program. For example, the compiler rejects
+x->f if it does not know the type of x because the different struct
+types can have members named f.</p>
+
+<p>The compiler infers the types of expressions based on uses. For
+example, consider:</p>
+
+<pre><code>  _ x = NULL;
+  x = g();
+  x-&gt;f;
+</code></pre>
+
+<p>This code will type-check provided the return type of g is a pointer
+to a struct with a field named f. If the two statements were in the
+other order, the code would not type-check. Also, if g returned an
+int, the code would not type-check, even without the x->f expression,
+because the _ x = NULL constrains x to have a pointer type.</p>
+
+<p>However, the above discussion assumes that sequences of statements are
+type-checked in order. This is true, but <em>in general the
+type-checker&#8217;s order is unspecified</em>.</p>
+
+<h5>Subtleties</h5>
+
+<p>In general, inference has subtle interactions with implicit coercions
+(such as from t *@notnull to t *@nullable) and constants that have
+multiple types (such as numeric constants).</p>
+
+<p>The following is a desirable property: If a program is modified by
+replacing some explicit types with _ and the program still
+type-checks, then its meaning is the same. <em>This property does not
+hold!</em> Here are two examples:</p>
+
+<h5>Numeric Types</h5>
+
+<p>This program prints -24 1000: </p>
+
+<pre><code>  int f() {
+  char c = 1000;
+  return c;
+  }
+  int g() {
+  _ c = 1000; // compiler infers int
+  return c;
+  }
+  int main() {
+  printf("%d %d", f(), g());
+  return 0;
+  }
+</code></pre>
+
+<h5>Order Matters</h5>
+
+<p>Here is an example where the function&#8217;s meaning depends on the order
+the type-checker examines the function:</p>
+
+<pre><code>  void h1(int *@notnull c, int maybe) {
+    _ a;
+    if(maybe)
+      a = c;
+    else
+      a = NULL;
+  }
+</code></pre>
+
+<p>At first, the type of a is completely unconstrained. If we next
+consider a = c, we will give a the type of c, namely int *@notnull, an
+int pointer that cannot be NULL. Clearly that makes the assignment a =
+NULL problematic, but Cyclone allows assignment from nullable pointers
+to non-nullable pointers; it gives a compile-time warning and inserts
+a run-time check that the value is not NULL. Here the check will fail
+and an exception will be raised. That is, h1(p,0) is guaranteed to
+raise an exception.</p>
+
+<p>But what if the type-checker examines a = NULL first? Then the
+type-checker will constrain a&#8217;s type to be a nullable pointer to an
+unconstrained type. Then the assignment a = c will constrain that type
+to be int, so the type of a is int *. An assignment from int *@notnull
+to int * is safe, so there is no warning. Moreover, the assignment a =
+NULL is not a run-time error.</p>
+
+<p><em>The order of type-checking is left unspecified. In the future, we
+intend to move to a system that is order-independent.</em></p>
+</div>
+</body>
+</html>

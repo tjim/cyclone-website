@@ -1,0 +1,109 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Semi-Automatic Porting</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Semi-Automatic Porting</h2>
+
+<p>The Cyclone compiler includes a simple porting mode which you can use
+to try to move your C code closer to Cyclone. The porting tool is not
+perfect, but it&#8217;s a start and we hope to develop it more in the
+future.</p>
+
+<p>When porting a file, say foo.c, you&#8217;ll first need to copy the file to
+foo.cyc and then edit it to add <code>__cyclone_port_on__;</code> and
+<code>__cyclone_port_off__;</code> around the code that you want Cyclone to
+port. For example, if after copying foo.c, the file foo.cyc contains
+the following:</p>
+
+<pre><code>1.   #include &lt;stdio.h&gt;
+2. 
+3.   void foo(char *s) {
+4.     printf(s);
+5.   }
+6. 
+7.   int main(int argc, char **argv) {
+8.     argv++;
+9.     for (argc--; argc &gt;= 0; argc--, argv++)
+10.      foo(*argv);
+11.  }
+</code></pre>
+
+<p>then you&#8217;ll want to insert <code>__cyclone_port_on__;</code> at line 2 and
+<code>__cyclone_port_off__;</code> after line 11. You do not want to port
+standard include files such as stdio, hence the need for the
+delimiters.</p>
+
+<p>Next compile the file with the -port flag: </p>
+
+<pre><code>  cyclone -port foo.cyc &gt; rewrites.txt
+</code></pre>
+
+<p>and pipe the output to a file, in this case rewrites.txt. If you edit
+the output file, you will see that the compiler has emitted a list of
+edits such as the following:</p>
+
+<pre><code>  foo.cyc(5:14-5:15): insert `?' for `*'
+  foo.cyc(9:24-9:25): insert `?' for `*'
+  foo.cyc(9:25-9:26): insert `?' for `*'
+</code></pre>
+
+<p>You can apply these edits by running the rewrite program on the edits:</p>
+
+<pre><code>  rewrite -port foo.cyc &gt; rewrites.txt
+</code></pre>
+
+<p>(The rewrite program is written in Cyclone and included in the tools
+sub-directory.) This will produce a new file called foo_new.cyc which
+should look like this:</p>
+
+<pre><code>#include &lt;stdio.h&gt;
+
+__cyclone_port_on__;
+
+void foo(char ?s) { 
+  printf(s);
+}
+
+int main(int argc, char ??argv) {
+  argv++;
+  for (argc--; argc &gt;= 0; argc--, argv++) 
+    foo(*argv);
+}
+__cyclone_port_off__;
+</code></pre>
+
+<p>Notice that the porting system has changed the pointers from thin
+pointers to fat pointers (?) to support the pointer arithmetic that is
+done in main, and that this constraint has flowed to procedures that
+are called (e.g., foo).</p>
+
+<p>You&#8217;ll need to strip out the port-on and port-off directives and then
+try to compile the file with the Cyclone compiler. In this case, the
+rewritten code in foo_new.cyc compiles with a warning that main might
+not return an integer value. In general, you&#8217;ll find that the porting
+tool doesn&#8217;t always produce valid Cyclone code. Usually, you&#8217;ll have
+to go in and modify the code substantially to get it to
+compile. Nonetheless, the porting tool can take care of lots of little
+details for you.</p>
+</div>
+</body>
+</html>

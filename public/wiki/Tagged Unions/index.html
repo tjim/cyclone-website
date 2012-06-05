@@ -1,0 +1,86 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Tagged Unions</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Tagged Unions</h2>
+
+<p>A tagged union declaration looks just like a C union, except that it
+you must specify the @tagged qualifier when declaring it. For example:</p>
+
+<pre><code>   @tagged union Foo {
+      int i;
+      double d;
+      char *@fat s;
+   };
+</code></pre>
+
+<p>The primary difference with C unions is that a tagged union includes a
+hidden tag. The tag indicates which member was last written. So, for
+example:</p>
+
+<pre><code>  union Foo x;
+  x.i = 3;
+  x.s = "hello";
+</code></pre>
+
+<p>causes the hidden tag to first indicate that the i member was written,
+and then is updated to record that the s member was written.</p>
+
+<p>When you attempt to read a member of a tagged union, a check is done
+on the hidden tag to ensure that this was the last member written, and
+thus the union contains a valid object of that member&#8217;s type. If some
+other member was last updated, then a Match_Exception will be thrown.</p>
+
+<p>You can test the hidden tag of a tagged union by using the tagcheck
+operation. For example:</p>
+
+<pre><code>  void printFoo(union Foo x) {
+    if (tagcheck(x.i))
+      printf("%d",x.i);
+    else if (tagcheck(x.d))
+      printf("%g",x.d);
+    else if (tagcheck(x.s))
+      printf("%s",x.s);
+  }
+</code></pre>
+
+<p>Alternatively, you can use pattern matching (described in the next
+section) which will ensure that you cover all of the cases
+properly. For instance, the function above may be rewritten as:</p>
+
+<pre><code>  void printFoo(union Foo x) {
+    switch (x) {
+    case {.i = i}: printf("%d",i); break;
+    case {.d = d}: printf("%g",d); break;
+    case {.s = s}: printf("%s",s); break;
+    }
+  }
+</code></pre>
+
+<p>If we failed to leave out one of the cases in the pattern match, then
+the compiler would warn us. This is particularly helpful when you add
+new variants to a tagged union, for then the compiler pinpoints the
+spots that you need to update in your code. Therefore, we encourage
+the use of pattern matching where possible.</p>
+</div>
+</body>
+</html>

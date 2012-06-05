@@ -1,0 +1,134 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Region Allocation</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Region Allocation</h2>
+
+<ul>
+<li><p>You can create a new object on the heap using one of a few kinds of expression:
+<code>new</code> <em>expr</em> evaluates <em>expr</em>, places the result into the heap, and
+returns a pointer to the result. It is roughly equivalent to</p>
+
+<pre><code>t @ temp = malloc(sizeof(t));
+// where t is the type of expr
+*temp = _ expr_;
+</code></pre>
+
+<p>For example, <code>new 17</code> allocates space for an integer on the heap,
+initializes it to 17, and returns a pointer to the space. For another
+example, if we have declared</p>
+
+<pre><code>struct Pair { int x; int y; };
+</code></pre>
+
+<p>then <code>new Pair(7,9)</code> allocates space for two integers on the heap,
+initializes the first to 7 and the second to 9, and returns a pointer
+to the first.</p></li>
+<li><p><code>new</code> <em>array-initializer</em> allocates space for an array, initializes
+it according to <em>array-initializer</em>, and returns a pointer to the
+first element. For example,</p>
+
+<pre><code>let x = new { 3, 4, 5 };
+</code></pre>
+
+<p>declares a new array containing 3, 4, and 5, and initializes <code>x</code> to
+point to the first element. More interestingly,</p>
+
+<pre><code>new { for _ identifier_ &lt; _ expr_1 : _ expr_2 }
+</code></pre>
+
+<p>is roughly equivalent to </p>
+
+<pre><code>unsigned int sz = _ expr_1;
+t @ temp = malloc(sz * sizeof(t2)); // where t is the  type of expr
+for (int _ identifier_ = 0; _ identifier_ &lt; sz; _ identifier_++)
+  temp[_ identifier_] = _ expr_2;
+</code></pre>
+
+<p>That is, <em>expr</em>1 is evaluated first to get the size of the new array,
+the array is allocated, and each element of the array is initialized
+by the result of evaluating <em>expr</em>2. <em>expr</em>2 may use <em>identifier</em>,
+which holds the index of the element currently being initialized.</p>
+
+<p>For example, this function returns an array containing the first n
+positive even numbers:</p>
+
+<pre><code>int *@fat n_evens(int n) {
+  return new {for next < n :  2*(next+1)};
+}
+</code></pre>
+
+<p>Note that: </p>
+
+<ul>
+<li><em>expr</em>1 is evaluated exactly once, while <em>expr</em>2 is evaluated
+<em>expr</em>1 times.</li>
+<li><em>expr</em>1 might evaluate to 0.</li>
+<li><em>expr</em>1 might evaluate to a negative number. If so, it is implicitly
+converted to a very large unsigned integer; the allocation is likely
+to fail due to insufficient memory. Currently, this will cause a crash!!</li>
+<li>Currently, for array initializers are the only way to create an object
+whose size depends on run-time data.</li>
+</ul></li>
+<li><p><code>malloc(sizeof(</code><em>type</em><code>))</code>. Returns a <code>@notnull</code> pointer to an
+uninitialized value of type <em>type</em>.</p></li>
+<li><p><code>malloc(n*sizeof(</code><em>type</em><code>))</code> or <code>malloc(sizeof(</code><em>type</em><code>)*n)</code>. The type
+must be a bits-only type (i.e., cannot contain pointers, tagged
+unions, zero-terminated values, etc.) If <code>n</code> is a compile-time
+constant expression, returns a <code>@thin</code> pointer with <code>@numelts(n)</code>. If
+<code>n</code> is not a compile-time constant, returns a <code>@fat</code> pointer to the
+sequence of <code>n</code> uninitialized values.</p></li>
+<li><p><code>calloc(n,sizeof(</code><em>type</em><code>))</code>. Similar to the <code>malloc</code> case above, but
+returns memory that is zero&#8217;d. Therefore, <code>calloc</code> supports types
+that are bits-only or zero-terminated.</p></li>
+<li><p><code>malloc(e)</code> where <code>e</code> is an expression not of one of the above
+forms. If <code>e</code> is constant, returns a <code>char *@numelts(e)@nozeroterm</code>
+otherwise returns a char <code>*@fat@nozeroterm</code>.</p></li>
+</ul>
+
+<p>Objects within regions can be created using the following analogous
+expressions.</p>
+
+<ul>
+<li><code>rnew(</code><em>identifier</em><code>)</code> <em>expr</em></li>
+<li><code>rnew(</code><em>identifier</em><code>)</code> <em>array-initializer</em></li>
+<li><code>rmalloc(</code><em>identifier</em><code>,sizeof(</code><em>type</em><code>))</code></li>
+<li><code>rmalloc(</code><em>identifier</em>,<code>n*sizeof(</code><em>type</em><code>))</code></li>
+<li><code>rmalloc(</code><em>identifier</em><code>,sizeof(</code><em>type</em><code>)*n)</code></li>
+<li><code>rmalloc(</code><em>identifier</em><code>,e))</code></li>
+<li><code>rcalloc(</code><em>identifier</em><code>,n,sizeof(</code><em>type</em><code>))</code></li>
+</ul>
+
+<p>Note that <code>new</code>, <code>malloc</code>, <code>calloc</code>, <code>rnew</code>, <code>rmalloc</code> and <code>rcalloc</code> are keywords.</p>
+
+<p>Here, the first argument specifies a region handle. The Cyclone
+library has a global variable Core::heap_region which is a handle for
+the heap region. So, for example, rnew (heap_region) <em>expr</em> allocates
+memory in the heap region which is initialized with <em>expr</em>. Moreover,
+new <em>expr</em> can be replaced with rnew(heap_region) <em>expr</em>.</p>
+
+<p>The only way to create an object in a stack region is declaring it as
+a local variable. Cyclone does not currently support <code>salloc</code>; use a
+lexical region instead.</p>
+</div>
+</body>
+</html>

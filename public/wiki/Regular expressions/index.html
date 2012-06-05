@@ -1,0 +1,93 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Regular expressions</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Regular expressions</h2>
+
+<p>Cyclone has an interface to the [Perl Compatible Regular
+Expressions][1] (PCRE) library.</p>
+
+<p>Here&#8217;s a Perl program that does a simple substitution:</p>
+
+<pre><code>my $x = "Hello, Bob";
+$x =~ s/Bob/World/;
+print $x, "\n";
+</code></pre>
+
+<p>It prints &#8220;Hello, World.&#8221;  The equivalent Cyclone program is</p>
+
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;pcre.h&gt;
+
+int main() {
+  let x = "Hello, Bob";
+  let y = pcre_s(x,"Bob","World",0);
+  printf("%s\n",y);
+  return 0;
+}
+</code></pre>
+
+<p>You need to compile this program with the <code>-lpcre</code> flag.</p>
+
+<p>A global replacement, like the Perl <code>s/foo/bar/g</code>, is done with</p>
+
+<pre><code>y = pcre_s_g(x,"foo","bar",0);
+</code></pre>
+
+<p>The last argument of <code>pcre_s</code> and <code>pcre_s_g</code> allows you to set
+options for the substitution.  For example the Perl
+<code>s/(foo|bar)baz/$1/gms</code> corresponds to</p>
+
+<pre><code>y = pcre_s_g(x,"(foo|bar)baz","$1",PCRE_MULTILINE|PCRE_DOTALL);
+</code></pre>
+
+<p>The options you can pass this way are <code>PCRE_MULTILINE</code> (for <code>m</code>),
+<code>PCRE_DOTALL</code> (for <code>s</code>), <code>PCRE_CASELESS</code> (for <code>i</code>), and
+<code>PCRE_EXTENDED</code> (for <code>x</code>).</p>
+
+<p>The Perl option <code>e</code> allows you to execute Perl statements at each
+match in the substitution, for example,</p>
+
+<pre><code>s{([A-Z]+)}{lc($1)}e
+</code></pre>
+
+<p>matches every word in upper case only, and converts that text to lower
+case using the function <code>lc</code>.  The result of the evaluation should be
+a string that is the replacement value.</p>
+
+<p>The equivalent in Cyclone would be</p>
+
+<pre><code>y = PCRE_S_EG(x,"([A-Z]+)",
+              ({ let one = DOLLAR(1);
+                 STRING(lc(one)); }),
+              0);
+</code></pre>
+
+<p><code>PCRE_S_EG</code> is a macro.  The third argument of the macro is an
+expression to be executed at each match.  Here, we have used a
+statement expression, which allows us to use declarations, etc.
+The macro <code>DOLLAR</code> returns a new, heap-allocated copy of the
+corresponding match (so <code>DOLLAR(1)</code> is like <code>$1</code> in Perl).  The macro
+<code>STRING</code> adds its argument to the replacement text.</p>
+</div>
+</body>
+</html>

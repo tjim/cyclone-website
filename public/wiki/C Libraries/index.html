@@ -1,0 +1,127 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: C Libraries</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>C Libraries</h2>
+
+<p>Cyclone provides partial support for the following C library headers,
+at least on Linux. On other platforms (e.g., Cygwin), some of these
+headers are not available. Furthermore, not all definitions from these
+headers are available, but rather, those that we could easily make
+safe.  </p>
+
+<p>If you are interested to see how we provide the C library interface,
+see <a href='/wiki/buildlib'>buildlib</a> and the specification file bin/cyc-lib/libc.cys in
+the Cyclone distribution.</p>
+
+<ul>
+<li><code>&lt;aio.h&gt;</code></li>
+<li><code>&lt;arpa/inet.h&gt;</code></li>
+<li><code>&lt;assert.h&gt;</code></li>
+<li><code>&lt;complex.h&gt;</code></li>
+<li><code>&lt;cpio.h&gt;</code></li>
+<li><code>&lt;ctype.h&gt;</code></li>
+<li><code>&lt;dirent.h&gt;</code></li>
+<li><code>&lt;dlfcn.h&gt;</code></li>
+<li><code>&lt;errno.h&gt;</code></li>
+<li><code>&lt;fcntl.h&gt;</code></li>
+<li><code>&lt;fenv.h&gt;</code></li>
+<li><code>&lt;float.h&gt;</code></li>
+<li><code>&lt;fmtmsg.h&gt;</code></li>
+<li><code>&lt;fnmatch.h&gt;</code></li>
+<li><code>&lt;ftw.h&gt;</code></li>
+<li><code>&lt;getopt.h&gt;</code></li>
+<li><code>&lt;glob.h&gt;</code></li>
+<li><code>&lt;grp.h&gt;</code></li>
+<li><code>&lt;inttypes.h&gt;</code></li>
+<li><code>&lt;iso646.h&gt;</code></li>
+<li><code>&lt;langinfo.h&gt;</code></li>
+<li><code>&lt;libgen.h&gt;</code></li>
+<li><code>&lt;limits.h&gt;</code></li>
+<li><code>&lt;locale.h&gt;</code></li>
+<li><code>&lt;math.h&gt;</code></li>
+<li><code>&lt;monetary.h&gt;</code></li>
+<li><code>&lt;mqueue.h&gt;</code></li>
+<li><code>&lt;ndbm.h&gt;</code></li>
+<li><code>&lt;net/if.h&gt;</code></li>
+<li><code>&lt;netdb.h&gt;</code></li>
+<li><code>&lt;netinet/in.h&gt;</code></li>
+<li><code>&lt;netinet/tcp.h&gt;</code></li>
+<li><code>&lt;nl_types.h&gt;</code></li>
+<li><code>&lt;poll.h&gt;</code></li>
+<li><code>&lt;pthread.h&gt;</code></li>
+<li><code>&lt;pwd.h&gt;</code></li>
+<li><code>&lt;regexp.h&gt;</code></li>
+<li><code>&lt;sched.h&gt;</code></li>
+<li><code>&lt;search.h&gt;</code></li>
+<li><code>&lt;semaphore.h&gt;</code></li>
+<li><code>&lt;setjmp.h&gt;</code></li>
+<li><code>&lt;signal.h&gt;</code></li>
+<li><code>&lt;spawn.h&gt;</code></li>
+<li><code>&lt;stdarg.h&gt;</code></li>
+<li><code>&lt;stdbool.h&gt;</code></li>
+<li><code>&lt;stddef.h&gt;</code></li>
+<li><code>&lt;stdint.h&gt;</code></li>
+<li><code>&lt;stdio.h&gt;</code></li>
+<li><code>&lt;stdlib.h&gt;</code></li>
+<li><code>&lt;string.h&gt;</code></li>
+<li><code>&lt;strings.h&gt;</code></li>
+<li><code>&lt;stropts.h&gt;</code></li>
+<li><code>&lt;sys/dir.h&gt;</code></li>
+<li><code>&lt;sys/file.h&gt;</code></li>
+<li><code>&lt;sys/ioctl.h&gt;</code></li>
+<li><code>&lt;sys/ipc.h&gt;</code></li>
+<li><code>&lt;sys/mman.h&gt;</code></li>
+<li><code>&lt;sys/msg.h&gt;</code></li>
+<li><code>&lt;sys/resource.h&gt;</code></li>
+<li><code>&lt;sys/select.h&gt;</code></li>
+<li><code>&lt;sys/sem.h&gt;</code></li>
+<li><code>&lt;sys/shm.h&gt;</code></li>
+<li><code>&lt;sys/socket.h&gt;</code></li>
+<li><code>&lt;sys/stat.h&gt;</code></li>
+<li><code>&lt;sys/statvfs.h&gt;</code></li>
+<li><code>&lt;sys/syslog.h&gt;</code></li>
+<li><code>&lt;sys/time.h&gt;</code></li>
+<li><code>&lt;sys/timeb.h&gt;</code></li>
+<li><code>&lt;sys/times.h&gt;</code></li>
+<li><code>&lt;sys/types.h&gt;</code></li>
+<li><code>&lt;sys/uio.h&gt;</code></li>
+<li><code>&lt;sys/un.h&gt;</code></li>
+<li><code>&lt;sys/utsname.h&gt;</code></li>
+<li><code>&lt;sys/wait.h&gt;</code></li>
+<li><code>&lt;tar.h&gt;</code></li>
+<li><code>&lt;termios.h&gt;</code></li>
+<li><code>&lt;tgmath.h&gt;</code></li>
+<li><code>&lt;time.h&gt;</code></li>
+<li><code>&lt;trace.h&gt;</code></li>
+<li><code>&lt;ucontext.h&gt;</code></li>
+<li><code>&lt;ulimit.h&gt;</code></li>
+<li><code>&lt;unistd.h&gt;</code></li>
+<li><code>&lt;utime.h&gt;</code></li>
+<li><code>&lt;utmpx.h&gt;</code></li>
+<li><code>&lt;wchar.h&gt;</code></li>
+<li><code>&lt;wctype.h&gt;</code></li>
+<li><code>&lt;wordexp.h&gt;</code></li>
+</ul>
+</div>
+</body>
+</html>

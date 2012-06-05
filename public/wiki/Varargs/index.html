@@ -1,0 +1,140 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Varargs</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Varargs</h2>
+
+<p>C functions that take a variable number of arguments (vararg
+functions) are syntactically convenient for the caller, but C makes it
+very difficult to ensure safety. The callee has no fool-proof way to
+determine the number of arguments or even their types. Also, there is
+no type information for the compiler to use at call-sites to reject
+bad calls.</p>
+
+<p>Cyclone provides three styles of vararg functions that provide
+different trade-offs for safety, efficiency, and convenience.</p>
+
+<p>First, you can call C vararg functions just as you would in C: </p>
+
+<pre><code>extern "C" void foo(int x, ...);
+void g() { 
+  foo(3, 7, "hi", 'x');
+}
+</code></pre>
+
+<p>However, for the reasons described above, foo is almost surely
+unsafe. All the Cyclone compiler will do is ensure that the vararg
+arguments at the call site have some legal Cyclone type.</p>
+
+<p>Actually, you can declare a Cyclone function to take C-style varargs,
+but Cyclone provides no way to access the vararg arguments for this
+style. That is why the example refers to a C function. (In the future,
+function subtyping could make this style less than completely silly
+for Cyclone functions.)</p>
+
+<p>The second style is for a variable number of arguments of one type: </p>
+
+<pre><code>void foo(int x, ...string_t args);
+void g() {
+  foo(17, "hi", "mom");
+}
+</code></pre>
+
+<p>The syntax is a type and identifer after the &#8220;&#8230;&#8221;. (The identifier is
+optional in prototypes, as with other parameters.) You can use any
+identifier; args is not special. At the call-site, Cyclone will ensure
+that each vararg has the correct type, in this case string_t.</p>
+
+<p>Accessing the varargs is simpler than in C. Continuing our example,
+args has type string_t *@fat `foo in the body of foo. You retrieve
+the first argument (&#8220;hi&#8221;) with args[0], the second argument (&#8220;mom&#8221;)
+with args[1], and so on. Of course, numelts(args) tells you how many
+arguments there are.</p>
+
+<p>This style is implemented as follows: At the call-site, the compiler
+generates a stack-allocated array with the array elements. It then
+passes a &#8220;fat pointer&#8221; to the callee with bounds indicating the number
+of elements in the array. Compared to C-style varargs, this style is
+less efficient because there is a bounds-check and an extra level of
+indirection for each vararg access. But we get safety and using vararg
+functions is just as convenient. No heap allocation occurs.</p>
+
+<p>A useful example of this style is in the list library: </p>
+
+<pre><code>list_t&lt;`a&gt; list(... `a argv) {
+  list_t result = NULL;
+  for (int i = numelts(argv) - 1; i &gt;= 0; i--) 
+    result = new List{argv[i],result};
+  return result;
+}
+</code></pre>
+
+<p>Callers can now write list(1,2,3,4,5) and get a list of 5 elements.  </p>
+
+<p>The third style addresses the problem that it&#8217;s often desirable to
+have a function take a variable number of arguments of <em>different</em>
+types. For example, printf works this way. In Cyclone, we could use a
+datatype in conjunction with the second style. The callee then uses an
+array subscript to access a vararg and a switch statement to determine
+its datatype variant. But this would not be very convenient for the
+caller&#8212;it would have to explicitly &#8220;wrap&#8221; each vararg in the datatype
+type. The third style makes this wrapping implicit. For example, the
+type of printf in Cyclone is:</p>
+
+<pre><code>extern datatype PrintArg&lt;`r::E&gt; {
+  String_pa(const char ? @nozeroterm`r);
+  Int_pa(unsigned long);
+  Double_pa(double);
+  LongDouble_pa(long double);
+  ShortPtr_pa(short *@notnull `r);
+  IntPtr_pa(unsigned long *@notnull `r);
+};
+typedef datatype PrintArg&lt;`r&gt; *@notnull `r parg_t&lt;`r&gt;;
+int printf(const char *@fat fmt, ... inject parg_t);
+</code></pre>
+
+<p>The special syntax &#8220;inject&#8221; is the syntactic distinction for the third
+style. The type must be a datatype type. In the body of the vararg
+function, the array holding the vararg elements have this datatype
+type, with the function&#8217;s region. (That is, the wrappers are
+stack-allocated just as the vararg array is.)</p>
+
+<p>At the call-site, the compiler implicitly wraps each vararg by finding
+a datatype variant that has the expression&#8217;s type and using it. The
+exact rules for finding the variant are as follows: Look in order for
+a variant that carries exactly the type of the expression. Use the
+first variant that matches. If none, make a second pass and find the
+first variant that carries a type to which the expression can be
+coerced. If none, it is a compile-time error.</p>
+
+<p>In practice, the datatype types used for this style of vararg tend to
+be quite specialized and used only for vararg purposes.</p>
+
+<p>Compared to the other styles, the third style is less efficient
+because the caller must wrap and the callee unwrap each argument. But
+everything is allocated on the stack and call sites do everything
+implicitly. A testament to the style&#8217;s power is the library&#8217;s
+implementation of printf and scanf entirely in Cyclone (except for the
+actual I/O system calls, of course).</p>
+</div>
+</body>
+</html>

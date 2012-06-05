@@ -1,0 +1,84 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Papers</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Papers</h2>
+
+<h2>Overview</h2>
+<ul>
+<li><p>
+<em><a href="http://www.cs.umd.edu/~mwh/papers/cyclone-cuj.pdf">Cyclone: a Type-safe Dialect of C.</a></em> Dan Grossman, Michael Hicks, Trevor Jim, and Greg Morrisett. C/C++ Users Journal, 23(1), January 2005.</p>
+
+<p><em>Cyclone is an effort to bring safety to C. This article briefly introduces Cyclone.</em></p></li>
+<li><p><em><a href="http://www.cs.umd.edu/projects/cyclone/papers/cyclone-safety.pdf">Cyclone: A Safe Dialect of C</a></em>, Trevor Jim, Greg Morrisett, Dan
+Grossman, Michael Hicks, James Cheney, and Yanling Wang.  USENIX
+Annual Technical Conference, pages 275&#8211;288, Monterey, CA, June 2002. <a href="http://www.cs.umd.edu/projects/cyclone/papers/cyclone-safety.ps">ps</a> <a href="http://www.cs.umd.edu/projects/cyclone/papers/cyclone-safety.pdf">pdf</a> <a href="http://www.cs.umd.edu/projects/cyclone/papers/cyclone-safety.dvi">dvi</a></p>
+
+<p><em>A longer, but earlier overview article about Cyclone.</em></p></li>
+</ul>
+
+<h2>Memory Management</h2>
+
+<ul>
+<li><p><em><a href="http://www.cs.umd.edu/projects/cyclone/papers/cyclone-regions.pdf">Region-based Memory Management in Cyclone</a></em>, Dan Grossman, Greg Morrisett, Trevor Jim, Michael Hicks, Yanling Wang, and James Cheney.  ACM Conference on Programming Language Design and Implementation, pages 282&#8211;293, Berlin, Germany, June, 2002.  <a href="http://www.cs.umd.edu/projects/cyclone/papers/cyclone-regions.ps">ps</a> <a href="http://www.cs.umd.edu/projects/cyclone/papers/cyclone-regions.pdf">pdf</a> <a href="http://www.cs.umd.edu/projects/cyclone/papers/cyclone-regions.dvi">dvi</a>   </p>
+
+<p><em>Describes Cyclone&#8217;s core memory management idea: regions.</em>  Cornell CS Technical Report TR2001&#8211;1856 contains the full definition and safety proof for the formal language sketched in the paper: <a href="http://www.cs.umd.edu/projects/cyclone/papers/cyclone-regions-tr.ps">ps</a> <a href="http://www.cs.umd.edu/projects/cyclone/papers/cyclone-regions-tr.pdf">pdf</a> <a href="http://www.cs.umd.edu/projects/cyclone/papers/cyclone-regions-tr.dvi">dvi</a></p></li>
+<li><p><em><a href="http://www.cs.umd.edu/~mwh/papers/ismm.pdf">Experience with Safe Manual Memory Management in Cyclone.</a></em> Michael Hicks, Greg Morrisett, Dan Grossman, and Trevor Jim. In Proceedings of the ACM International Symposium on Memory Management (ISMM), pages 73-84, October 2004. </p>
+
+<p><em>This paper describes how we have integrated unique pointers,
+reference counted objects, and dynamic regions into the language, to reduce or eliminate the need for garbage collection.</em></p></li>
+<li><p><em><a href="http://www.cs.umd.edu/projects/PL/cyclone/scp.pdf">Safe Manual Memory Management in Cyclone</a></em>. Nikhil Swamy, Michael Hicks, Greg Morrisett, Dan Grossman, and Trevor Jim. Science of Computer Programming, 2006. Special issue on memory management. </p>
+
+<p><em>Expands ISMM conference paper by introducing reaps, alias qualifiers and more benchmark results.</em> </p></li>
+<li><p><em><a href="http://www.cs.umd.edu/Library/TRs/CS-TR-4514/CS-TR-4514.pdf">Safe and Flexible Memory Management in Cyclone</a></em>, Mike Hicks,
+Greg Morrisett, Dan Grossman, and Trevor Jim.  University of Maryland
+Technical Report CS&#8211;TR&#8211;4514, July 2003.</p>
+
+<p><em>Earlier tech report, superseded by the above papers.</em></p></li>
+</ul>
+
+<h2>Concurrency</h2>
+
+<ul>
+<li><p><em><a href="http://www.cs.washington.edu/homes/djg/papers/cycthreads.pdf">Type-Safe Multithreading in Cyclone</a></em>, Dan Grossman.  ACM Workshop on Types in Language Design and Implementation, pages 13–25, New Orleans, LA, January 2003.  <a href="http://www.cs.washington.edu/homes/djg/papers/cycthreads.ps">ps</a> <a href="http://www.cs.washington.edu/homes/djg/papers/cycthreads.pdf">pdf</a> <a href="http://www.cs.washington.edu/homes/djg/papers/cycthreads.dvi">dvi</a></p>
+
+<p><em>Formal development for supporting concurrency in Cyclone.  Unfortunately, we have yet to implement it.</em></p></li>
+</ul>
+
+<h2>Polymorphism</h2>
+
+<ul>
+<li><p><em><a href="http://www.cs.washington.edu/homes/djg/papers/qtil.pdf">Quantified Types in an Imperative Language</a></em>, Dan Grossman.  ACM Transactions on Programming Languages and Systems, 28(3), May 2006.  <a href="http://www.cs.washington.edu/homes/djg/papers/qtil.ps">ps</a> <a href="http://www.cs.washington.edu/homes/djg/papers/qtil.pdf">pdf</a> <a href="http://www.cs.washington.edu/homes/djg/papers/qtil.dvi">dvi</a></p>
+
+<p><em>Describes Cyclone&#8217;s use of polymorphic types (commonly found in languages like Standard ML) for better code and data structure reuse.</em></p></li>
+</ul>
+
+<h2>Foundations</h2>
+
+<ul>
+<li><p><em><a href="http://www.cs.cornell.edu/people/fluet/research/substruct-regions/ESOP06/esop06.pdf">Linear Regions Are All You Need.</a></em>  Matthew Fluet, Amal Ahmed, and Greg Morrisett.  2006 European Symposium on Programming.</p>
+
+<p><em>Defines and proves sound a calculus that unites regions with unique pointers.</em></p></li>
+</ul>
+</div>
+</body>
+</html>

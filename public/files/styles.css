@@ -1,0 +1,102 @@
+body
+{
+	background-color: #fff;
+        color: #000;
+	margin: 0;
+	font-family: verdana, trebuchet, sans-serif;
+}
+
+body a
+{
+        color: #0033ff;
+}
+
+#header
+{
+        background-color: #000;
+        color: #fff;
+}
+
+#header_strip
+{
+        height: 64px;
+        margin: 0;
+        padding: 0;
+}
+
+#header_logo
+{
+        background-image: url(cyclone-logo.png);
+        background-position: center;
+        background-repeat: no-repeat;
+        height: 32px;
+        padding: 32px 0 0 0;
+}
+
+#content
+{
+	margin: 0 auto;
+	text-align: left;
+	width: 75%;
+	font-size: 14px;
+	letter-spacing: 0px;
+	line-height: 150%;
+	color: #000;
+}
+
+#menu
+{
+        font-size: 10px;
+        font-weight: bold;
+        padding: 6px 0 0 0;
+        margin: 0;
+	text-align: center;
+}
+
+#menu a
+{
+        letter-spacing: .5em;
+        text-transform: uppercase;
+        text-decoration: none;
+        color: #fff;
+        padding: 0 1em;
+}
+
+#menu a:hover
+{
+	background-color: #00acff;
+}
+
+#menu input
+{
+        margin: 2px 2em;
+        border: none;
+        padding: 2px 2px;
+}
+
+#edit
+{
+        font-size: 10px;
+        font-style: italic;
+        font-weight: bold;
+        float:right;
+}
+
+#edit a
+{
+        color: #444;
+}
+
+pre {
+        background-color: #ddd;
+        padding: 2px;
+        padding-left: 10px;
+        margin-left: 20px;
+        margin-right: 20px;
+}
+
+#searchbox
+{
+        border: solid 3px #00acff;
+        padding: 2px 3px;
+}

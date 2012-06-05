@@ -1,0 +1,82 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: The Tagof Operator</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>The Tagof Operator</h2>
+
+<p>Each datatype constructor has an associated unique integer called the
+<em>tag</em>. The tag of a datatype or datatype field can be accessed using
+the tagof operator. For example, given the datatype Exp defined
+previously, we can write a structural comparison function which
+enforces an order on expressions as follows:</p>
+
+<pre><code>  bool sameexp(datatype Exp @e1, datatype Exp @e2) {
+    switch $(e1,e2) {
+    case $(&amp;Int(i),&amp;Int(j)): return i - j;
+    case $(&amp;Float(f),&amp;Float(g)): 
+        if (f == g) return 0;
+        if (f &lt; g) return -1;
+        return 1;
+    case $(&amp;Unop(u1,ea),&amp;Unop(u2,eb)): 
+        int c = u1 - u2;
+        if (c != 0) return c;
+        return sameexp(ea,eb);
+    case $(&amp;Binop(b1,ea1,ea2),&amp;Binop(b2,eb1,eb2)):
+        int c = b1 - b2;
+        if (c != 0) return c;
+        c = sameexp(ea1,eb1);
+        if (c != 0) return c;
+        return sameexp(ea2,eb2);
+    default: return tagof(e1) - tagof(e2);
+    }
+  }
+</code></pre>
+
+<p>This function compares the structure of two expressions e1 and e2 and
+returns a number less than zero if e1 &lt; e2, zero if e1 == e2, and a
+number greater than zero otherwise. Notice that the default case needs
+to handle all of the situtations where e1 and e2 are different
+constructors. To achieve this, we extract the tags from the two
+datatype values and return their difference. This keeps us from having
+to write a more tedious match that would include the following cases:</p>
+
+<pre><code>   case $(&amp;Int(_),_): return -1;
+   case $(_,&amp;Int(_)): return 1;
+   case $(&amp;Unop(_,_),_): return -1;
+   case $(_,&amp;Unop(_)) return 1;
+</code></pre>
+
+<h5>Future</h5>
+
+<ul>
+<li>Currently, given a value of a variant type (e.g., datatype
+Shape.Circle), the only way to access the fields is with
+pattern-matching even though the variant is known. We may provide
+a tuple-like syntax in the future.</li>
+<li>We hope to provide symbolic definitions for the values
+corresponding to the tags of a datatype. For now, the current
+association is that the tags are assigned consecutively based on
+the order of the constructor declarations.</li>
+</ul>
+</div>
+</body>
+</html>

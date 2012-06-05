@@ -1,0 +1,58 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Interprocedural Memory Initialization</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Interprocedural Memory Initialization</h2>
+
+<p>We currently have limited support for functions that initialize
+parameters. if you have an *@notnulll1 parameter (pointing into any
+region), you can use an attribute <code>__attribute__((initializes(1)))</code>
+(where it&#8217;s the first parameter, use a different number otherwise) to
+indicate that the function initializes through the parameter.</p>
+
+<p>Obviously, this affects the definite-assignment analysis for the
+callee and the call-site. In the callee, we know the parameter is
+initialized, but not what it points to. The memory pointed to must be
+initialized before returning. Care must be taken to reject this code:</p>
+
+<pre><code>void f(int *@notnull*@notnull x) __attribute__((initializes(1))) { 
+  x = new (new 0); 
+  return x; 
+}
+</code></pre>
+
+<p>In the caller, the actual argument must point to a known
+location. Furthermore, this location must not be reachable from any
+other actual arguments, i.e., there must be no aliases available to
+the callee.</p>
+
+<p>Two common idioms not yet supported are: </p>
+
+<ol>
+<li>The parameter is initialized only if the return value satisfies
+ some predicate; for example, it is 0.</li>
+<li>The caller can pass NULL, meaning do not initialize through this
+ parameter.</li>
+</ol>
+</div>
+</body>
+</html>

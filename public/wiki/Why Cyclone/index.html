@@ -1,0 +1,64 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Why Cyclone</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Why Cyclone</h2>
+
+<h2>C is not going away</h2>
+<p>
+Although newer languages (Java, C#, Perl, PHP, Python, Ruby, &#8230;) are
+eclipsing C in usage and vitality, C is not going away.  In fact, C programs
+will comprise the core of our computing environment for the foreseeable
+future.  95% of the code running on your desktop today (2006) is written
+in C, or its relative, C++ (e.g., the OS, your mail client and web browser).</p>
+
+<p>There are a number of reasons for this, but they all boil down to this:
+<strong>C gives programmers control over resources</strong>.  The programmer
+controls memory layout, which affects performance (an array of structs
+in C is contiguous in memory, but an array of objects in Java may not
+be contiguous).  The programmer controls when memory gets allocated
+and deallocated, and can reuse already allocated memory.  And so on.</p>
+
+<p>C programs can therefore be extremely efficient (at the price of programming effort).
+In contrast, the newer languages all offer programmer convenience at the
+expense of control.  Put another way, from a bird&#8217;s eye view, all of the new languages are
+about the same, while C is an entirely different creature.</p>
+
+<p>Core infrastructure that is already written in C or that requires maximal
+efficiency (the OS) will continue to rely on C for some time.</p>
+
+<h2>C is unsafe</h2>
+
+<p>The problem with this is that it is very easy to write C code that is
+vulnerable to attack.  Conversely, it is very hard to write C code that
+is <em>not</em> vulnerable to buffer overflows and similar bugs.</p>
+
+<p>Furthermore, the programs that are written in C are those most in need of
+hardening: the operating system and network servers.</p>
+
+<h2>Therefore, Cyclone</h2>
+
+<p>Cyclone thus tries to fill an empty niche: the safe language with C&#8217;s level
+of control and efficiency.</p>
+</div>
+</body>
+</html>

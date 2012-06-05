@@ -1,0 +1,103 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Existential types</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Existential types</h2>
+
+<p>The implementation of a struct type can have _existentially bound type
+variables_ (as well as region variables, tag variables, and so
+on). Here is a useless example:</p>
+
+<pre><code>  struct T { &lt;`a&gt; `a f1; `a f2; };
+</code></pre>
+
+<p>Values of type struct T have two fields with the same (boxed) type,
+but there is no way to determine what the type is. Different values
+can use different types. To create such a value, expressions of any
+appropriate type suffice:</p>
+
+<pre><code>  struct T x = T{new 3, new 4};
+</code></pre>
+
+<p>Optionally, you can explicitly give the type being used for `a: </p>
+
+<pre><code>  struct T x = T{&lt;int*@notnull&gt; new 3, new 4};
+</code></pre>
+
+<p>As with other lists of type variables, multiple existentially bound
+types should be comma-separated.</p>
+
+<p>Once a value of an existential variant is created, there is no way to
+determine the types at which it was used. For example, T(&#8220;hi&#8221;,&#8221;mom&#8221;)
+and T(8,3) both have type struct T.</p>
+
+<p>The only way to read fields of a struct with existentially bound type
+variables is pattern matching. That is, the field-projection operators
+(. and ->) will <em>not</em> type-check. The pattern can give names to the
+correct number of type variables or have the type-checker generate
+names for omitted ones. Continuing our useless example, we can write:</p>
+
+<pre><code>  void f(struct T t) {
+    let T{&lt;`b&gt; x,y} = t;
+    x = y;
+  }
+</code></pre>
+
+<p>We can now see why the example is useless; there is really nothing
+interesting that f can do with the fields of t. In other words, given
+T(&#8220;hi&#8221;,&#8221;mom&#8221;), no code will ever be able to use the strings &#8220;hi&#8221; or
+&#8220;mom&#8221;. In any case, the scope of the type `b is the same as the scope
+of the variables x and y. There is one more restriction: For subtle
+reasons, you cannot use a reference pattern (such as *x) for a field
+of a struct that has existentially bound type variables.</p>
+
+<p>Useful examples invariably use function pointers. For a realistic
+library, see fn.cyc in the distribution. Here is a smaller (and
+sillier) example; see the following two sections for an explanation of
+why the regions(<code>a) &lt;=</code>r stuff is necessary.</p>
+
+<pre><code>  int f1(int x, int y) { return x+y; }
+  int f2(string x, int y) {printf("%s",x); return y; }
+  struct T&lt;`r::E&gt; {&lt;`a&gt; : regions(`a) &lt;= `r 
+    `a f1; 
+    int f(`a, int); 
+  };
+  void g(bool b) {
+    struct T&lt;`H&gt; t;
+    if(b)
+      t = Foo(37,f1);
+    else
+      t = Foo("hi",f2);
+    let T{&lt;`b&gt; arg,fun} = t;
+    `b x = arg;
+    int (*f)(`b,int) = fun;
+    f(arg,19);
+  }
+</code></pre>
+
+<p>We could replace the last three lines with fun(arg)&#8212;the compiler
+would figure out all the types for us. Similarly, the explicit types
+above are for sake of explanation; in practice, we tend to rely
+heavily on type inference when using these advanced typing constructs.</p>
+</div>
+</body>
+</html>

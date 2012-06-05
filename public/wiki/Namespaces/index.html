@@ -1,0 +1,112 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Namespaces</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Namespaces</h2>
+
+<pre><code>  namespace Foo { 
+    int x = 0; 
+    int f() { return x; }  
+  }
+</code></pre>
+
+<p>As in C++, namespaces are used to avoid name clashes in code. For example:
+declares an integer named Foo::x and a function named Foo::f. Note
+that within the namespace, you don&#8217;t need to use the qualified
+name. For instance, Foo::f refers to Foo::x as simply x. We could also
+simply write &#8220;namespace Foo;&#8221; (note the trailing semi-colon) and leave
+out the enclosing braces. Every declaration (variables, functions,
+types, typedefs) following this namespace declaration would be placed
+in the Foo namespace.</p>
+
+<p>As noted before, you can refer to elements of a namespace using the
+&#8220;::&#8221; notation. Alternatively, you can open up a namespace with a
+&#8220;using&#8221; declaration. For example, we could follow the above code with:</p>
+
+<pre><code>  namespace Bar {  
+    using Foo { 
+      int g() { return f(); } 
+    } 
+    int h() { return Foo::f(); } 
+  }
+</code></pre>
+
+<p>Here, we opened the Foo namespace within the definition of Bar::g. One
+can also write &#8220;using Foo;&#8221; to open a namespace for the remaining
+definitions in the current block.</p>
+
+<p>Namespaces can nest as in C++.   </p>
+
+<p>Currently, namespaces are only supported at the top-level and you
+can&#8217;t declare a qualified variable directly. Rather, you have to write
+a namespace declaration to encapsulate it. For example, you cannot
+write &#8220;int Foo::x = 3;.&#8221;</p>
+
+<p>The following subtle issues and <strong>implementation bugs</strong> may leave you
+scratching your head:</p>
+
+<ul>
+<li><p>The current implementation translates qualified Cyclone variables
+to C identifiers very naively: each :: is translated to _
+(underscore). This translation is wrong because it can introduce
+clashes that are not clashes in Cyclone, such as in the following:</p>
+
+<pre><code>namespace Foo { int x = 7; }
+int Foo_x = 9;
+</code></pre>
+
+<p>So avoid prefixing your identifiers with namespaces in your
+program. We intend to fix this bug in a future release.</p></li>
+<li><p>Because #include is defined as textual substitution, the following
+are usually very bad ideas: Having &#8220;namespace Foo;&#8221; or &#8220;using
+Foo;&#8221; at the top level of a header file. After all, you will be
+changing the identifiers produced or the identifiers available in
+every file that includes the header file. Having #include
+directives within the scope of namespace declarations. After all,
+you are changing the names of the identifiers in the header file
+by (further) qualifying them. Unfortunately, the current system
+uses the C pre-processor before looking at the code, so it cannot
+warn you of these probable errors.</p>
+
+<p>In short, you are advised to not use the &#8220;semicolon syntax&#8221; in header
+files and you are advised to put all #include directives at the top of
+files, before any namespace or using declarations.</p></li>
+<li><p>The translation of identifiers declared extern &#8220;C&#8221; is
+different. Given</p>
+
+<pre><code>namespace Foo { extern "C" int x; }
+</code></pre>
+
+<p>the Cyclone code refers to the global variable as Foo::x, but the
+translation to C will convert all uses to just x. The following code
+will therefore get compiled incorrectly (f will return 4):</p>
+
+<pre><code>namespace Foo { extern "C" int x; }
+int f() {
+  int x = 2;
+  return x + Foo::x;
+}
+</code></pre></li>
+</ul>
+</div>
+</body>
+</html>

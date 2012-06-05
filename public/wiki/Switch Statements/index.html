@@ -1,0 +1,257 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Switch Statements</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Switch Statements</h2>
+
+<p>In Cyclone, you can switch on a value of any type and the case
+&#8220;labels&#8221; (the part between case and the colon) are patterns. The
+switch expression is evaluated and then matched against each pattern
+in turn. The first matching case statement is executed. Except for
+some restrictions, Cyclone&#8217;s switch statement is therefore a powerful
+extension of C&#8217;s switch statement.</p>
+
+<h5>Restrictions</h5>
+
+<ul>
+<li><em>You cannot implicitly &#8220;fall-through&#8221; to the next case</em>. Instead,
+you must use the fallthru; statement, which has the effect of
+transferring control to the beginning of the next case. There are
+two exceptions to this restriction: First, adjacent cases with no
+intervening statement do not require a fall-through. Second, the
+last case of a switch does not require a fall-through or break.</li>
+<li>The cases in a switch <em>must be exhaustive</em>; it is a compile-time
+error if the compiler determines that it could be that no case
+matches. The rules for what the compiler determines are described
+below.</li>
+<li>A <em>case cannot be unreachable</em>. It is a compile-time error if the
+compiler determines that a later case may be subsumed by an
+earlier one. The rules for what the compiler determines are
+described below. (C almost has this restriction because case
+labels cannot be repeated, but Cyclone is more restrictive. For
+example, C allows cases after a default case.)</li>
+<li>The body of a switch statement must be a <em>sequence of case
+statements</em> and case statements can appear only in such a
+sequence. So idioms like Duff&#8217;s device (such as &#8220;switch(i%4)
+while(i- >=0) { case 3: &#8230; }&#8221;) are not supported.</li>
+<li>A constant case label must be a constant, <em>not a constant
+expression</em>. That is, case 3+4: is allowed in C, but not in
+Cyclone. Cyclone supports this feature with a separate construct:
+switch &#8220;C&#8221; (e) { case 3+4: &#8230; }. This construct is much more like
+C&#8217;s switch: The labels must be constant numeric expressions and
+fallthru is never required.</li>
+</ul>
+
+<h5>An Extension of C</h5>
+
+<p>Except for the above restrictions, we can see Cyclone&#8217;s switch is an
+extension of C&#8217;s switch. For example, consider this code (which has
+the same meaning in C and Cyclone):</p>
+
+<pre><code>  int f(int i) {
+    switch(i) {
+    case 0:  f(34); return 17;
+    case 1:  return 17;
+    default: return i;
+    }
+  }
+</code></pre>
+
+<p>In Cyclone terms, the code tries to match against the constant 0. If
+it does not match (i is not 0), it tries to match against the pattern
+1. Everything matches against default; in fact, default is just
+alternate notation for &#8220;case _&#8221;, i.e., a case with a [wildcard
+pattern][14]. For performance reasons, switch statements that are
+legal C switch statements are translated to C switch statements. Other
+switch statements are translated to, &#8220;a mess of tests and gotos&#8221;.</p>
+
+<p>We now discuss some of the restrictions in terms of the above
+example. Because there is no &#8220;implicit fallthrough&#8221; in non-empty
+cases, the return statement in case 0 cannot be omitted. However, we
+can replace the &#8220;return 17;&#8221; with &#8220;fallthru;&#8221; a special Cyclone
+statement that immediately transfers control to the next
+case. fallthru does not have to appear at the end of a case body, so
+it acts more like a goto than a fallthrough. As in our example, any
+case that matches all values of the type switched upon (e.g.,
+default:, case _:, case x:) must appear last, otherwise later cases
+would be unreachable. (Note that other types may have even more such
+patterns. For example Pair(x,y) matches all values of type struct Pair
+int x; int y;).</p>
+
+<h5>Much More Powerful</h5>
+
+<p>Because Cyclone case labels are patterns, a switch statement can match
+against any expression and bind parts of the expression to
+variables. Also, <strong>fallthru can (in fact, must) bind values</strong> to the
+next case&#8217;s pattern variables. This silly example demonstrates all of
+these features:</p>
+
+<pre><code>  extern int f(int);}
+  int g(int x, int y) {
+    // return f(x)*f(y), but try to avoid using multiplication
+    switch($(f(x),f(y))) {
+    case $(0,_): fallthru;
+    case $(_,0): return 0;
+    case $(1,b): fallthru(b+1-1);
+    case $(a,1): return a;
+    case $(a,b): return a*b;
+    }
+  }
+</code></pre>
+
+<p>The only part of this example using a still-unexplained feature is
+&#8220;fallthru(b)&#8221;, but we explain the full example anyway. The switch
+expression has type $(int,int), so all of the cases must have patterns
+that match this type. Legal case forms for this type not used in the
+example include &#8220;case $(_,id):&#8221;, &#8220;case $(id,_):&#8221;, &#8220;case id:&#8221;, &#8220;case
+_:&#8221;, and &#8220;default:&#8221;.</p>
+
+<p>The code does the following: </p>
+
+<ul>
+<li>It evaluates the pair $(f(x), f(y)) and stores the result on the stack. </li>
+<li>If f(x) returned 0, the first case matches, control jumps to the
+second case, and 0 is returned.</li>
+<li>Else if f(y) returned 0, the second case matches and 0 is returned. </li>
+<li>Else if f(x) returned 1, the third case matches, b is assigned the
+value f(y) returned, control jumps to the fourth case after
+assigning b+1-1 to a, and a (i.e., b + 1 - 1, i.e., b, i.e., f(y))
+is returned.</li>
+<li>Else if f(y) returned 1, the fourth case matches, a is assigned
+the value f(x) returned, and a is returned.</li>
+<li>Else the last case matches, a is assigned the value f(x) returned,
+b is assigned the value f(y) returned, and a*b is returned.</li>
+</ul>
+
+<p>Note that the switch expression is evaluated only
+once. Implementation-wise, the result is stored in a
+compiler-generated local variable and the value of this variable is
+used for the ensuring pattern matches.</p>
+
+<p>The general form of fallthrus is as follows: If the next case has no
+bindings (i.e., identifiers in its pattern), then you must write
+fallthru;. If the next case has n bindings, then you must write
+fallthru(e1,&#8230;,en) where each ei is an expression with the
+appropriate type for the ith binding in the next case&#8217;s pattern,
+reading from left to right. (By appropriate type, we mean the type of
+the expression that would be bound to the ith binding were the next
+case to match.) The effect is to evaluate e1 through en, bind them to
+the identifiers, and then goto the body of the next case. fallthru is
+not allowed in the last case of a switch, not even if there is an
+enclosing switch.</p>
+
+<p>We repeat that fallthru may appear anywhere in a case body, but it is
+usually used at the end, where its name makes the most sense. ML
+programmers may notice that fallthru with bindings is strictly more
+expressive than or-patterns, but more verbose.</p>
+
+<h5>Case Guards</h5>
+
+<p>We have withheld the full form of Cyclone case labels. In addition to
+case p: where p is a pattern, you may write case p &amp;&amp; e: where p is a
+pattern and e is an expression of type int. (And since e1 &amp;&amp; e2 is an
+expression, you can write case p &amp;&amp; e1 &amp;&amp; e2: and so on.) Let&#8217;s call e
+the case&#8217;s <em>guard</em>.</p>
+
+<p>The case matches if p matches the expression in the switch and e
+evaluates to a non-zero value. e is evaluated only if p matches and
+only after the bindings caused by the match have been properly
+initialized. Here is a silly example:</p>
+
+<pre><code>extern int f(int);
+int g(int a, int b) {
+  switch ($(a,b-1)) {
+  case $(0,y) &amp;&amp; y &gt; 1: return 1;
+  case $(3,y) &amp;&amp; f(x+y) == 7 : return 2;
+  case $(4,72): return 3;
+  default: return 3;
+  }
+}
+</code></pre>
+
+<p>The function g returns 1 if a is 0 and b is greater than 2. Else if x
+is 3, it calls the function f (which of course may do arbitrary
+things) with the sum of a and b. If the result is 7, then 2 is
+returned. In all other cases (x is not 3 or the call to f does not
+return 7), 3 is returned.</p>
+
+<p>Case guards make constant patterns unnecessary (we can replace case 3:
+with case x &amp;&amp; x==3:, for example), but constant patterns are better
+style and easier to use.</p>
+
+<p>Case guards are not interpreted by the compiler when doing
+exhaustiveness and overlap checks, as explained below.</p>
+
+<h5>Exhaustiveness and Useless-Case Checking</h5>
+
+<p>As mentioned before, it is a compile-time error for the type of the
+switch expression to have values that none of the case patterns match
+or for a pattern not to match any values that earlier patterns do not
+already match. Rather than explain the precise rules, we currently
+rely on your intuition. But there are two rules to guide your
+intuition:</p>
+
+<ul>
+<li>In terms of exhaustiveness checking, the compiler acts as if any
+case guard might evaluate to false.</li>
+<li>In terms of exhaustiveness checking, numeric constants cannot make
+patterns exhaustive. Even if you list out all 256 characters, the
+compiler will act as though there is another possibility you have
+not checked.</li>
+</ul>
+
+<p>We emphasize that checking does not just involve the &#8220;top-level&#8221; of
+patterns. For example, the compiler rejects the switch below because
+the third case is redundant:</p>
+
+<pre><code>  enum Color { Red, Green };
+  void f(enum Color c1, enum Color c2) {
+    switch ($(c1,c2)) {
+    case $(Red,x): return;
+    case $(x,Green): return;
+    case $(Red,Green): return;
+    default: return;
+    }
+  }
+</code></pre>
+
+<h5>Rules for No Implicit Fall-Through</h5>
+
+<p>As mentioned several times now, Cyclone differs from C in that a case
+body may not implicitly fall-through to the next case. It is a
+compile-time error if such a fall-through might occur. Because the
+compiler cannot determine exactly if an implicit fall-through could
+occur, it uses a precise set of rules, which we only sketch here. The
+exact same rules are used to ensure that a function (with return type
+other than void) does not &#8220;fall off the bottom.&#8221; The rules are very
+similar to the rules for ensuring that Java methods do not &#8220;fall off
+the bottom.&#8221;</p>
+
+<p>The general intuition is that there must be a break, continue, goto,
+return, or throw along all control-flow paths. The value of
+expressions is not considered except for numeric constants and logical
+combinations (using <code>&amp;&amp;</code>, <code>||</code>, and <code>?</code> <code>:</code>) of such constants. The
+statement try s catch &#8230; is checked as though an exception might be
+thrown at any point while s executes.</p>
+</div>
+</body>
+</html>

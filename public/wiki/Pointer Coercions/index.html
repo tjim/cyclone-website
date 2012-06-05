@@ -1,0 +1,82 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Pointer Coercions</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Pointer Coercions</h2>
+
+<p>In addition to pointer subtyping, Cyclone provides a number of
+<em>coercions</em> which allow you to convert a pointer value from one type
+to another. For instance, you can coerce a thin pointer with 42
+elements to a fat pointer:</p>
+
+<pre><code>  int arr[42];
+  int *@thin @numelts(42) p = arr;
+  int *@fat pfat = p;
+</code></pre>
+
+<p>As another example, you can coerce a thin, zero-terminated pointer to
+a fat, zero-terminated pointer:</p>
+
+<pre><code>  int strlen(char *@zeroterm s) {
+    char *@fat @zeroterm sfat = s;
+    return numelts(s);
+  }
+</code></pre>
+
+<p>In both cases, the compiler inserts code to convert from the thin
+representation to an appropriate fat representation. In the former
+case, the bounds information can be calculated statically. In the
+latter case, the bounds information is calculated dynamically (by
+looking for the zero that terminates the sequence.) In both cases, the
+coercion is guaranteed to succeed, so the compiler does not emit a
+warning.</p>
+
+<p>In other cases, a coercion can cause a run-time exception to be
+thrown. For instance, if you attempt to coerce a @nullable pointer to
+a @notnull pointer, and the value happens to be NULL, then the
+exception Null_Exception is thrown. In general, the compiler will warn
+you when you try to coerce from one pointer representation to another
+where a run-time check must be inserted, and that check might fail. A
+dataflow analysis is used to avoid some warnings, but in general, it&#8217;s
+not smart enough to get rid of all of them. In these cases, you can
+explicitly cast the pointer from one representation to the other, and
+the compiler will not generate a warning (though it will still insert
+the run-time check to ensure safety.)</p>
+
+<p>Here is a list of some of the coercions that are possible: </p>
+
+<ul>
+<li>T can be coerced to S when T is a subtype of S. </li>
+<li><code>T*@nullable</code> can be coerced to <code>T*@notnull</code> but might throw an
+exception at run-time.</li>
+<li><code>T*@thin@numelts(c)</code> can be coerced to <code>T*@fat</code> when c is a constant
+expression.</li>
+<li><code>T*@fat</code> can be coerced to <code>T*@thin @numelts(c)</code> when c is a constant
+expression, but might throw an exception at run-time.</li>
+<li><code>T*@thin@zeroterm</code> can be coerced to <code>T*@fat@zeroterm</code> and vice versa. </li>
+<li><code>T*@thin@zeroterm</code> can be coerced to const <code>T*@fat@nozeroterm</code>. </li>
+<li><code>T*@thin@zeroterm</code> can be coerced to <code>T*@fat@nozeroterm</code>, but access
+to the trailing zero is lost.</li>
+</ul>
+</div>
+</body>
+</html>

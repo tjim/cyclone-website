@@ -1,0 +1,168 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Cross-compiling for the Nokia 770</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Cross-compiling for the Nokia 770</h2>
+
+<p>The Nokia 770 has limited processing power: a 220MHz ARM-based CPU,
+64MB RAM, and 128MB of non-volative storage (flash).  Using the
+Cyclone compiler on such a limited system would be painful, maybe
+impossible.  Instead we&#8217;ll use a special Cyclone compiler on a more
+powerful machine, and compile the programs there before transferring
+them to the 770 to run.  The process is about the same regardless of
+whether you want to compile for the 770, the Nintendo DS, the iPod, or
+even more limited platforms.</p>
+
+<p>The hardest part of this is getting a cross-compiling gcc.
+Fortunately, Nokia is using standard open source tools for their
+development environment, and binary distributions and good
+documentation are easily available.</p>
+
+<h3>Installing the cross-compiler</h3>
+
+<p>The basic development environment is <a href="http://scratchbox.org/">Scratchbox</a>.  Scratchbox is a
+set of cross-compilers and emulators that let you simulate working on
+one processor architecture, while in fact running on a completely
+different architecture.  In our case, we&#8217;ll be able to compile and
+execute ARM code while running on an x86 machine.</p>
+
+<p>You can install Scratchbox and Maemo (the Nokia-specific devkit) using
+<a href="http://www.scratchbox.org/wiki/Sbox102Maemo">these instructions</a>.  Due to our particular needs, we&#8217;ll use a
+different set of packages than those mentioned in those instructions.
+Here&#8217;s the complete list of tarballs that I used:</p>
+
+<pre><code>scratchbox-core-1.0.4-i386.tar.gz
+scratchbox-libs-1.0.3-i386.tar.gz
+scratchbox-toolchain-arm-gcc3.4-glibc2.3-1.0.2-i386.tar.gz
+scratchbox-toolchain-host-gcc-1.0.5-i386.tar.gz
+</code></pre>
+
+<p>The tarballs are available <a href="http://www.scratchbox.org/download/files/sbox-releases/1.0/tarball/">here</a>.  I didn&#8217;t bother to install any
+Scratchbox devkits, or the Maemo SDK, as these aren&#8217;t necessary to
+cross compile simple command-line applications.</p>
+
+<p>After following the instructions you should have a working Scratchbox
+with ARM target.  This means that when you are logged in to the
+Scratchbox in the ARM target, you are running ARM binaries via
+emulation.  We also need a HOST target, where you can run
+x86 binaries natively.  The setup for HOST is about the same as for ARM:</p>
+
+<blockquote>
+  <p>Using sb-menu, choose &#8220;Setup&#8221; to create the HOST target.</p>
+  
+  <ol>
+  <li>Name the target HOST</li>
+  <li>Select host-gcc compiler</li>
+  <li>Select debian and perl devkits</li>
+  <li>Select &#8220;none&#8221; for CPU transparency method</li>
+  <li>Select &#8220;no&#8221; for installing files</li>
+  <li>Select &#8220;yes&#8221; for selecting the target</li>
+  <li>Exit sb-menu.</li>
+  </ol>
+</blockquote>
+
+<p>You should now be running inside the HOST target in Scratchbox.</p>
+
+<h3>Installing Cyclone</h3>
+
+<p>Now, on to Cyclone.  <a href="/wiki/Download">Download the distribution; you&#8217;ll need to use
+the CVS version to be sure it works with Maemo.</a>
+Place the distribution in your Scratchbox home directory and cd to the
+toplevel directory.  Configure and build:</p>
+
+<pre><code>./configure --target=arm-maemo-elf
+make
+make install
+</code></pre>
+
+<p>Now, create the canonical first program:</p>
+
+<pre><code>cat &gt; hello.cyc &lt;&lt;ZZZ
+#include &lt;stdio.h&gt;
+int main () { printf("Hello, world!\n"); return 0; }
+ZZZ
+</code></pre>
+
+<p>Compile it with</p>
+
+<pre><code>cyclone hello.cyc -nogc -b arm-maemo-elf
+</code></pre>
+
+<p>Transfer the resulting a.out to your 770.  On most Linux systems you
+can simply plug in the 770 over USB and drag the file over; this will
+put the program on the memory card.  <strong>Be sure to move the program off
+of the memory card to your home directory</strong>, because it won&#8217;t run from
+the memory card.</p>
+
+<p>Finally, run it from an xterm:</p>
+
+<p><img src="/files/770-hello.jpg" alt="Hello world on a 770" /></p>
+
+<h3>Under the covers</h3>
+
+<p>A couple of details.  When you did</p>
+
+<pre><code>./configure --target=arm-maemo-elf
+</code></pre>
+
+<p>you set Cyclone up so that both a native (x86) compiler and a cross
+(ARM) compiler would be built.  Because Cyclone uses gcc and
+associated tools as its back end, the difference between the two is
+just that the ARM version invokes a cross gcc toolchain instead of the
+native toolchain.  If you examine the generated Makefile.inc, you&#8217;ll
+see these lines:</p>
+
+<pre><code>TARGET_CC=/scratchbox/compilers/arm-linux-gcc3.4.cs-glibc2.3/bin/arm-linux-gcc
+TARGET_CFLAGS=
+TARGET_RANLIB=/scratchbox/compilers/arm-linux-gcc3.4.cs-glibc2.3/bin/arm-linux-ranlib
+TARGET_AR=/scratchbox/compilers/arm-linux-gcc3.4.cs-glibc2.3/bin/arm-linux-ar
+</code></pre>
+
+<p>If you are cross-compiling for a different architecture, or you have
+gotten a different version of the Scratchbox toolchains, you will need
+to adjust these variables.</p>
+
+<p>A second detail: note that when we compiled hello.cyc, we used the
+-nogc flag.  This means that the garbage collector will not be linked
+in.  In fact, the normal build process will not cross-compile the
+garbage collector at all, so the compile will fail if you do not use
+-nogc.</p>
+
+<p>It is possible to cross-compile the garbage collector, but I don&#8217;t
+have much experience with it.  If you are using Scratchbox, then you
+can compile the garbage collector in the ARM target, and hello.cyc
+will run on the 770 with the garbage collector linked in.  It does not
+run in the ARM target itself, though.</p>
+
+<p>To cross-compile the garbage collector in the ARM target, do this:</p>
+
+<pre><code>cd gc
+./configure --enable-threads=no --enable-shared=no --enable-cplusplus=no
+make
+mv .libs/libgc.a /usr/local/lib/cyclone/cyc-lib/arm-maemo-elf/gc.a
+</code></pre>
+
+<p>Now you should be able to compile programs to use the garbage
+collector as usual, by leaving off the -nogc flag.</p>
+<p align=right><i>15 May 2006 by trevor <a href="/blog/trevor/Cross-compiling%20for%20the%20Nokia%20770-20060516032902">#</a></i></p>
+</body>
+</html>

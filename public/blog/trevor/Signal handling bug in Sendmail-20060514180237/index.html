@@ -1,0 +1,44 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Signal handling bug in Sendmail</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Signal handling bug in Sendmail</h2>
+
+<p><a href="http://xforce.iss.net/xforce/alerts/id/216">Here&#8217;s an interesting vulnerability</a>:</p>
+
+<blockquote>
+  <p>Sendmail contains a signal race vulnerability when receiving and
+  processing mail data from remote clients. Sendmail utilizes a signal
+  handler for dealing with timeouts that is not async-safe and
+  interruption of certain functions by this signal handler will cause
+  static data elements to be left in an inconsistent state. These data
+  elements can be used to write data to invalid parts of the stack (or
+  heap in some scenarios), thus taking control of the vulnerable
+  process.</p>
+</blockquote>
+
+<p>It&#8217;s a good reminder that signal handling turns any program into a
+multithreaded program.</p>
+<p align=right><i>14 May 2006 by trevor <a href="/blog/trevor/Signal%20handling%20bug%20in%20Sendmail-20060514180237/">#</a></i></p>
+</div>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Language Summary</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Language Summary</h2>
+
+<p>This section is a short summary of the language. It describes the lexical structure and how a sequence of ASCII characters is translated to a sequence of tokens and full stops.
+Note that this summary is not yet completed.</p>
+
+<h4>Translation unit</h4>
+
+<p>The program is specified in a <em>translation unit</em> that the compiler parsers and translates into ANSI C source, that is further translated into machine instruction.</p>
+
+<pre><code>program:
+  translation-unit&lt;sub&gt;opt&lt;/sub&gt;
+</code></pre>
+
+<h4>Program entry point</h4>
+
+<p>When the program is evaluated by the operating system, the <em>program entry point</em> is a function <code>main()</code>, defined as</p>
+
+<pre><code>int main(int argc, char const *argv[])
+{
+  statements...
+}
+</code></pre>
+
+<p><em>or</em></p>
+
+<pre><code>int main() { statements... }
+</code></pre>
+
+<p>In the first variant the operating system passes command line options that was given before evaluation started.</p>
+
+<h4>Line terminators <a name="Line_terminators"></a></h4>
+
+<p>Line terminators need to be recognized so that Cyclone compiler can report line numbers and determine the end of comments, quoted literals and line continuation coherently. Lines are separated by ASCII LF (linefeed or newline) or CR (carriage return).</p>
+
+<pre><code>line-terminator:
+  the LF or CR character or CRLF (also known as DOS line-ending)
+
+input-character:
+  any character but not LF or CR
+</code></pre>
+
+<p>A line terminator that is preceeded by <code>\</code> (backslash) is continuation line.</p>
+
+<h4>Whitespaces <a name="Whitespaces"></a></h4>
+
+<p>Whitespace is any character with ASCII codes less than or equal to that of ASCII space, i.e. control characters or space. Line terminators are control characters but have been identified in preceding clausul and are therefore included explicitly below.</p>
+
+<pre><code>whitespace:
+  line-terminator
+  control-character
+  the ASCII SP character (aka space)
+
+control-character:
+  any ASCII control character (\000 to \037)
+</code></pre>
+
+<h4>Comments <a name="Comments"></a></h4>
+
+<p>Comments can be either line or block comment. Line comment begins with <code>//</code> and extends up to and including the next line terminator. Block comments begins with <code>/*</code> and ends with <code>*/</code>. Block comments cannot be nested.</p>
+
+<p>[<em>Example</em>:</p>
+
+<pre><code>// line comment
+
+/*
+** Block comment
+*/
+</code></pre>
+
+<p>&#8211; <em>end example</em>]</p>
+
+<h4>Separators <a name="Keywords"></a></h4>
+
+<p>The following 14 tokens are <em>separators</em> in Cyclone:</p>
+
+<p><em>Separator</em>: one of</p>
+
+<pre><code>(   )   {   }   [   ]   .   :
+|   ||  ;   ,   -&gt;  #
+</code></pre>
+
+<h4>Keywords <a name="Keywords"></a></h4>
+
+<p>The following 99 tokens are the <em>keywords</em> or reserved words in Cyclone:</p>
+
+<p><em>Keyword</em>: one of</p>
+
+<pre><code>ALIASABLE       NULL            REFCNT          RESTRICTED      UNIQUE
+
+aqual_t         aquals          assert          asm             abstract
+auto            break           calloc          case            catch
+char            const           continue       cyclone_override datatype
+default         do              double          else            enum
+export          cyclone_hide    extern          fallthru        float
+for             goto            if              inline          int
+let             long            malloc          namespace       new
+numelts         offsetof        qcalloc         qmalloc         qnew
+rcalloc         region_t        region          regions         register
+restrict        return          rmalloc         rmalloc_inline  rvmalloc
+rnew            short           signed          sizeof          static
+struct          switch          tagcheck        tagof           tag_t
+throw           try             typedef         typeof          union
+unsigned        using           valueof         valueof_t       void
+volatile        while   
+
+__attribute__           __attribute             __asm__                 __asm               
+__builtin_va_list       _Complex                __complex__             __const__
+__extension__           __inline__              __inline                __noinference__
+__cyclone_port_on__     __cyclone_port_off__    __cyclone_pragma__      __restrict
+__signed__              __tempest_on__          __tempest_off__         __typeof__
+__unsigned__            __volatile__
+</code></pre>
+
+<h4>Operators <a name="Keywords"></a></h4>
+
+<p>The following 33 tokens are <em>operators</em> of Cyclone:</p>
+
+<p><em>Operator</em>: one of</p>
+
+<pre><code>+   -   *   /   %   &lt;   &gt;
+</code></pre>
+
+<p><em>Unary operator</em>: one of</p>
+
+<pre><code>~   !   -   +
+</code></pre>
+
+<p><em>Assignment operator</em>: one of</p>
+
+<pre><code>==  !=  &lt;=  &gt;=  ++  --  +=  -=
+*=  /=  %=  |=  ^=  &amp;=  &lt;&lt;= &gt;&gt;=
+&amp;&amp;  ||  &lt;&lt;  &gt;&gt;  &lt;&gt;  -&gt;  ... ::
+:=:
+</code></pre>
+</div>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link media='all' href='/files/styles.css' rel='stylesheet' type='text/css' />
+<link rel="icon" href="/files/cyclone-favicon.png" type="image/png" />
+<title>Cyclone: Static Expression Bounds</title>
+</head>
+<body>
+</head>
+<body>
+<div id="header">
+  <div id="header_strip">
+    <a href="/"><div id="header_logo"></div></a>
+  </div>
+  <div id="menu">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/wiki">Wiki</a>
+    <a href="/wiki/Download">Download</a>
+  </div>
+</div>
+<div id="content">
+<h2>Static Expression Bounds</h2>
+
+<p>The bound for the @numelts qualifier must be a <em>static</em> expression. A
+static expression is either a constant expression, or an expression
+involving valueof(T) for a type-level expression T. The valueof
+construct is used to connect the value of a run-time integer to the
+static bound on an array. For example, the following function takes in
+an integer num and pointer to a sequence of num integers and returns
+the sum of the sequence:</p>
+
+<pre><code>  int sum(tag_t&lt;`n&gt; num, 
+          int *@notnull @numelts(valueof(`n)) p) {
+    int a = 0;
+    for (unsigned i = 0; i &lt; num; i++) 
+      a += p[i];
+  }
+</code></pre>
+
+<p>The type of num is specified as <code>tag_t&lt;`n&gt;</code>. This simply means that
+num holds an integer value, called <code>`n</code>, and the number of elements
+of p is equal to n. This form of dependency is common enough that it
+can be abbreviated as follows:</p>
+
+<pre><code>  int sum(tag_t num, int p[num]);
+</code></pre>
+
+<p>and the compiler will fill in the missing information.   </p>
+</div>
+</body>
+</html>
